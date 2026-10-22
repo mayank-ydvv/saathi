@@ -2,6 +2,13 @@
 
 This is the team's single source of truth. Everyone codes against these contracts; change them only after telling the whole team (raise it under "Contract change requests" in a PR).
 
+## Accepted changes
+
+| Change | Why | Agreed in |
+|---|---|---|
+| `Routine.day_slots: list[list[int]]` (last field, default `[]`) | Lets the day that leaves the 14-day window be subtracted from `hist` without a scan | PR #6 review |
+| The engine counts only `motion.human`, `motion` and `ding` as activity; `package` and `vehicle` are stored but ignored | A passing car or a parcel isn't evidence that the parent is up | PR #6 review |
+
 ## 4. SHARED CONTRACTS (everyone codes against these — do not change them)
 
 ### 4.1 Constants
@@ -47,6 +54,7 @@ class Routine:        # one per (home_id, zone)
     today: date | None            # local date currently being accumulated
     today_first: int | None       # first-activity minute today, None if no activity yet
     today_slots: set[int]         # slots active today (so a slot counts once per day)
+    day_slots: list[list[int]] = []  # active slots of each closed day in the window, oldest first (added, PR #6)
 
 @dataclass
 class Anomaly:
