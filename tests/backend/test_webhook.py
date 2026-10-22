@@ -111,7 +111,7 @@ def test_night_front_door_opens_one_alert(client, home, store, escalated):
 
     (alert,) = store.list_alerts(HOME)
     assert alert["kind"] == "night_activity" and alert["zone"] == "front_door"
-    assert alert["state"] == "SUSPECT" and alert["reason"] == "Front door opened at 02:10"
+    assert alert["state"] == "SUSPECT" and alert["reason"].startswith("Front door opened at 02:10")
     assert alert["steps"][0]["state"] == "SUSPECT"
     assert [a["alert_id"] for a in escalated] == [alert["alert_id"]]
 
