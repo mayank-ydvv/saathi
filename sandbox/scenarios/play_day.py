@@ -3,7 +3,7 @@
 `ring-sandbox play` always places a scenario so that it ends "now", which loses the
 time of day the anomaly engine depends on. This runner uses ring-sandbox's own
 `load_yaml` and `run(start=...)` so that `offset_s` means "seconds after local midnight"
-(Asia/Kolkata) on a chosen date. It also creates Kamala's four devices with stable ids.
+(Asia/Kolkata) on a chosen date. It also adds Kamala's indoor cameras if they are missing.
 
 Examples (from the repo root, emulator running on :8787):
     python sandbox/scenarios/play_day.py fall_day --speed 600
@@ -29,12 +29,13 @@ DEFAULT_URL = "http://127.0.0.1:8787"
 # avoids needing the tzdata package on Windows.
 IST = timezone(timedelta(hours=5, minutes=30), "Asia/Kolkata")
 
-# (kind, name, stable id, zone). The ids are what the backend sees as `device_id`.
-DEVICES: list[tuple[str, str, str, str]] = [
-    ("doorbell", "Front Door", "dev_front_door", "front_door"),
-    ("camera", "Kitchen Cam", "dev_kitchen_cam", "kitchen"),
-    ("camera", "Living Room Cam", "dev_living_room_cam", "living_room"),
-    ("camera", "Bedroom Cam", "dev_bedroom_cam", "bedroom"),
+# (kind, name, zone). Names match backend/ingest/seed.py, which maps devices to zones by
+# name, so the runner and `seed_home` can run in either order and share the same devices.
+DEVICES: list[tuple[str, str, str]] = [
+    ("doorbell", "Front Door", "front_door"),  # already in the emulator's default world
+    ("camera", "Kitchen Cam", "kitchen"),
+    ("camera", "Living Room Cam", "living_room"),
+    ("camera", "Bedroom Cam", "bedroom"),
 ]
 
 
@@ -66,32 +67,30 @@ def split_at(scenario: Scenario, from_s: int) -> tuple[Scenario, Scenario]:
     return replace(scenario, steps=before), replace(scenario, steps=after)
 
 
-def ensure_devices(http: httpx.Client) -> None:
-    """Create Kamala's devices if missing; drop the default 'Front Door' so names are unique.
+def ensure_devices(http: httpx.Client) -> dict[str, str]:
+    """Add any of Kamala's devices that are missing (by name); return {device_id: zone}.
 
+    Never removes or renames devices, so ids already seeded into the home stay valid.
     Idempotent: safe to call before every run. O(devices).
     """
-    existing = {d["id"]: d for d in http.get("/_sandbox/state").json()["devices"]}
-    ours = {dev_id for _, _, dev_id, _ in DEVICES}
-    names = {name for _, name, _, _ in DEVICES}
-    for dev_id, dev in existing.items():
-        if dev["name"] in names and dev_id not in ours:
-            http.delete(f"/_sandbox/devices/{dev_id}").raise_for_status()
-    for kind, name, dev_id, _ in DEVICES:
-        if dev_id not in existing:
-            body = {"kind": kind, "name": name, "id": dev_id}
-            http.post("/_sandbox/devices", json=body).raise_for_status()
+    by_name = {d["name"]: d["id"] for d in http.get("/_sandbox/state").json()["devices"]}
+    for kind, name, _ in DEVICES:
+        if name not in by_name:
+            resp = http.post("/_sandbox/devices", json={"kind": kind, "name": name})
+            resp.raise_for_status()
+            by_name[name] = resp.json()["data"]["id"]
+    return {by_name[name]: zone for _, name, zone in DEVICES}
 
 
 def print_events(events: list[dict[str, Any]], zone_of: dict[str, str]) -> None:
-    """Print each delivered webhook as local time, type, sub_type, device, zone."""
+    """Print each delivered webhook as local time, type, sub_type, zone, device id."""
     for ev in events:
         attrs = ev["data"]["attributes"]
         at = datetime.fromtimestamp(attrs["timestamp"] / 1000, tz=UTC).astimezone(IST)
         source = attrs["source"]
         print(
             f"{at:%Y-%m-%d %H:%M:%S} IST  {ev['data']['type']:<16} "
-            f"{attrs.get('sub_type') or '':<7} {source:<20} {zone_of.get(source, '?')}"
+            f"{attrs.get('sub_type') or '':<7} {zone_of.get(source, '?'):<12} {source}"
         )
 
 
@@ -122,9 +121,8 @@ def main(argv: list[str] | None = None) -> None:
 
     scenario = load_yaml(str(resolve_path(args.scenario)))
     last_day = args.date or datetime.now(tz=IST).date()
-    zone_of = {dev_id: zone for _, _, dev_id, zone in DEVICES}
     with httpx.Client(base_url=args.url, timeout=10.0) as http:
-        ensure_devices(http)
+        zone_of = ensure_devices(http)
     for back in range(args.days - 1, -1, -1):
         day = last_day - timedelta(days=back)
         print(f"# {scenario.name} on {day} ({len(scenario.steps)} steps)")

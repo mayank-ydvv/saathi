@@ -13,7 +13,7 @@ from sandbox.scenarios.play_day import DEVICES, local_midnight, parse_hhmm, spli
 
 SCENARIO_DIR = Path(__file__).resolve().parent
 NAMES = ["normal_day", "fall_day", "late_morning", "night_door", "scam_visitor", "aide_visit"]
-DEVICE_NAMES = {name for _, name, _, _ in DEVICES}
+DEVICE_NAMES = {name for _, name, _ in DEVICES}
 WEBHOOK_TYPES = {"motion_detected", "button_press"}
 DAY_S = 24 * 3600
 
