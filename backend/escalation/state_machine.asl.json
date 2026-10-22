@@ -1,0 +1,111 @@
+{
+  "Comment": "Saathi escalation ladder: SUSPECT -> NUDGE_PARENT -> ALERT_FAMILY -> ALERT_NEIGHBOUR. Each Task waits for a callback token; a timeout moves up the ladder, an ack (SendTaskSuccess) ends in Resolved.",
+  "StartAt": "Suspect",
+  "States": {
+    "Suspect": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${EscalationStepFunctionArn}",
+        "Payload": {
+          "alert_id.$": "$.alert_id",
+          "home_id.$": "$.home_id",
+          "state": "SUSPECT",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "TimeoutSecondsPath": "$.waits.suspect",
+      "ResultPath": "$.ack",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.Timeout"], "ResultPath": null, "Next": "NudgeParent" }],
+      "Next": "Resolved"
+    },
+    "NudgeParent": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${EscalationStepFunctionArn}",
+        "Payload": {
+          "alert_id.$": "$.alert_id",
+          "home_id.$": "$.home_id",
+          "state": "NUDGE_PARENT",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "TimeoutSecondsPath": "$.waits.nudge",
+      "ResultPath": "$.ack",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.Timeout"], "ResultPath": null, "Next": "AlertFamily" }],
+      "Next": "Resolved"
+    },
+    "AlertFamily": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${EscalationStepFunctionArn}",
+        "Payload": {
+          "alert_id.$": "$.alert_id",
+          "home_id.$": "$.home_id",
+          "state": "ALERT_FAMILY",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "TimeoutSecondsPath": "$.waits.family",
+      "ResultPath": "$.ack",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.Timeout"], "ResultPath": null, "Next": "AlertNeighbour" }],
+      "Next": "Resolved"
+    },
+    "AlertNeighbour": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${EscalationStepFunctionArn}",
+        "Payload": {
+          "alert_id.$": "$.alert_id",
+          "home_id.$": "$.home_id",
+          "state": "ALERT_NEIGHBOUR",
+          "task_token.$": "$$.Task.Token"
+        }
+      },
+      "TimeoutSeconds": 86400,
+      "ResultPath": "$.ack",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.Timeout"], "ResultPath": null, "Next": "Unanswered" }],
+      "Next": "Resolved"
+    },
+    "Unanswered": {
+      "Type": "Succeed",
+      "Comment": "Nobody acknowledged within a day; the alert stays open (red) on the dashboard."
+    },
+    "Resolved": { "Type": "Succeed" }
+  }
+}
