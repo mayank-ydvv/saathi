@@ -144,8 +144,23 @@ class DynamoStore:
         return routine
 
     # alerts --------------------------------------------------------------
-    def put_alert(self, alert: Record) -> None:
-        self._alerts.put_item(Item=alert)
+    def put_alert(self, alert: Record, expected_state: str | None = None) -> bool:
+        """PutItem, conditional on the stored state when `expected_state` is given."""
+        if expected_state is None:
+            self._alerts.put_item(Item=alert)
+            return True
+        try:
+            self._alerts.put_item(
+                Item=alert,
+                ConditionExpression="#s = :expected",
+                ExpressionAttributeNames={"#s": "state"},
+                ExpressionAttributeValues={":expected": expected_state},
+            )
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            raise
+        return True
 
     def get_alert(self, home_id: str, alert_id: str) -> Record | None:
         item = self._alerts.get_item(Key={"home_id": home_id, "alert_id": alert_id}).get("Item")

@@ -36,7 +36,9 @@ class Store(Protocol):
         """zone -> routine dict for every zone that has one."""
 
     # alerts --------------------------------------------------------------
-    def put_alert(self, alert: Record) -> None: ...
+    def put_alert(self, alert: Record, expected_state: str | None = None) -> bool:
+        """Insert/replace. With `expected_state`, only if the stored alert is still in that
+        state (optimistic concurrency between ladder steps and acks). True if written."""
 
     def get_alert(self, home_id: str, alert_id: str) -> Record | None: ...
 

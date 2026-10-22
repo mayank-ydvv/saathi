@@ -140,3 +140,11 @@ def test_digest_and_blobs(store):
     assert "snapshots/x.jpg" in url
     assert store.get_blob("snapshots/x.jpg") == (b"\xff\xd8jpeg", "image/jpeg")
     assert store.get_blob("nope") is None
+
+
+def test_conditional_alert_put(store):
+    store.put_alert(_alert("alt_0001", "SUSPECT"))
+    assert store.put_alert(_alert("alt_0001", "NUDGE_PARENT"), expected_state="SUSPECT") is True
+    assert store.put_alert(_alert("alt_0001", "RESOLVED"), expected_state="SUSPECT") is False
+    assert store.find_alert("alt_0001")["state"] == "NUDGE_PARENT"
+    assert store.put_alert(_alert("alt_new"), expected_state="SUSPECT") is False

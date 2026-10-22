@@ -78,13 +78,17 @@ class MemoryStore:
             return copy.deepcopy(self._routines[home_id])
 
     # alerts --------------------------------------------------------------
-    def put_alert(self, alert: Record) -> None:
-        """Insert or replace. O(log n) for a new id."""
+    def put_alert(self, alert: Record, expected_state: str | None = None) -> bool:
+        """Insert or replace (conditionally on the stored state). O(log n) for a new id."""
         with self._lock:
             alert_id = alert["alert_id"]
-            if alert_id not in self._alerts:
+            current = self._alerts.get(alert_id)
+            if expected_state is not None and (current or {}).get("state") != expected_state:
+                return False
+            if current is None:
                 bisect.insort(self._alert_ids[alert["home_id"]], alert_id)
             self._alerts[alert_id] = copy.deepcopy(alert)
+            return True
 
     def get_alert(self, home_id: str, alert_id: str) -> Record | None:
         alert = self.find_alert(alert_id)
