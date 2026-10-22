@@ -4,19 +4,42 @@ Scripted days in the life of **Kamala**, a parent living alone, played against t
 [ring-sandbox](https://github.com/josepha-mayo/ring-sandbox) emulator of the Ring Partner API.
 They drive the Saathi demo, the engine tests and the 14-day backfill.
 
-Kamala's home has four Ring devices, one per Saathi zone. `play_day.py` creates them in the
-emulator with stable ids, so the backend can map `device_id → zone` from the `homes` record:
+Kamala's home has four Ring devices, one per Saathi zone. Steps name the device; the backend
+(`backend/ingest/seed.py`) maps names to zones, and both it and `play_day.py` add the indoor
+cameras the emulator's default world lacks:
 
-| Device name | Kind | `device_id` | Zone |
-|---|---|---|---|
-| Front Door | doorbell | `dev_front_door` | `front_door` |
-| Kitchen Cam | camera | `dev_kitchen_cam` | `kitchen` |
-| Living Room Cam | camera | `dev_living_room_cam` | `living_room` |
-| Bedroom Cam | camera | `dev_bedroom_cam` | `bedroom` |
+| Device name | Kind | Zone |
+|---|---|---|
+| Front Door | doorbell (in the default world) | `front_door` |
+| Kitchen Cam | camera | `kitchen` |
+| Living Room Cam | camera | `living_room` |
+| Bedroom Cam | camera | `bedroom` |
 
-## The scenarios
+## With the Saathi backend (the demo)
 
-Demo commands run from the repo root with the emulator on `:8787`. `--speed 600` means one real
+`scripts/demo_run.sh <scenario>` starts the emulator and API, seeds the home, and plays
+`sandbox/scenarios/<scenario>.yml` through `scripts/demo_driver.py` on the backend's demo clock.
+For that driver each file carries `story_start: "00:00"` (offsets count from midnight) and,
+where the anomaly needs time to pass after the last step, `check_at` (the driver jumps the clock
+there and forces a scheduler tick).
+
+Verified on 2026-10-22 against the merged engine and backend (`STORAGE=memory`, team routine
+fixture `sandbox/fixtures/routines_home-demo-1.json`, driver at `--speed 600`, scheduler tick
+every 5 s):
+
+| Scenario | Alerts raised | Status after |
+|---|---|---|
+| `normal_day` | none (22:00 tick: no anomalies) | green |
+| `fall_day` | `long_inactivity`: "No movement anywhere for 4 h 5 min (last: living room at 13:00)" | yellow → ladder |
+| `late_morning` | `late_start` kitchen: "No kitchen movement by 08:50 (usually 07:50)" | red, full ladder |
+| `night_door` | `night_activity` front door: "Front door opened at 02:10 — unusual for this hour" | red, full ladder |
+| `scam_visitor` | none from the routine checks (all 27 events stored); the visitor description was not checked in this run | green |
+| `aide_visit` | none (all 29 events stored) | green |
+
+## Playing scenarios on their own
+
+Without the backend, `play_day.py` plays a scenario straight into the emulator at real local
+clock times. Commands run from the repo root with the emulator on `:8787`. `--speed 600` means one real
 second per ten virtual minutes; `--from HH:MM` sends earlier steps instantly and paces the rest.
 Run time is for the paced part.
 
@@ -38,7 +61,7 @@ ring-sandbox webhook http://localhost:8000/webhooks/ring --key change-me
 ```
 
 The `--key` must equal `RING_WEBHOOK_HMAC_KEY` in `.env`. To serve real doorbell snapshots, add
-`--media-dir <folder>` to `serve` with a `dev_front_door.jpg` in that folder. Without it, the
+`--media-dir <folder>` to `serve` with a `default.jpg` in that folder. Without it, the
 emulator serves solid-colour placeholder images.
 
 **Cold start (14 learned days).** Before a demo, replay `normal_day` for the 14 days before today:
@@ -64,10 +87,10 @@ ring-sandbox 0.5.0 make a small runner necessary:
    the time of day. `play_day.py` calls ring-sandbox's own `run(..., start=...)` with `start` set
    to local midnight of `--date` (default: today).
 2. **No indoor cameras in the default world.** The emulator boots with Front Door, Backyard,
-   Kitchen Chime and Front Door Sensor. `play_day.py` adds the three indoor cameras through
-   `POST /_sandbox/devices`. It also replaces the default Front Door with one whose id is
-   `dev_front_door`, so device names stay unique. It is idempotent, so run it any number of times.
-   Run it once before plain `ring-sandbox play`, otherwise that fails with "no device named …".
+   Kitchen Chime and Front Door Sensor. `play_day.py` adds any of the three indoor cameras that
+   are missing, by name, through `POST /_sandbox/devices`. It never removes or renames a device,
+   so it is safe to run before or after `seed_home`. Run it (or `seed_home`) once before plain
+   `ring-sandbox play`, otherwise that fails with "no device named …".
 
 Options: `--date YYYY-MM-DD`, `--days N` (N consecutive days ending at `--date`), `--speed`,
 `--backdate`, `--from HH:MM`, `--no-deliver` (write history only), `--url`.
@@ -78,11 +101,11 @@ Options: `--date YYYY-MM-DD`, `--days N` (N consecutive days ending at `--date`)
   later than the real clock. Webhooks are still delivered, but Ring media endpoints reject future
   timestamps, so snapshot fetches for those events fail. For snapshots, play a past `--date` or
   pace in real time.
-- **One snapshot per device.** The emulator serves `<media-dir>/dev_front_door.jpg` (or
-  `default.jpg`) for every doorbell event and reads it on each request. To show different
+- **One snapshot per device.** The emulator serves `<media-dir>/default.jpg` (or
+  `<device_id>.jpg`) for every doorbell event and reads it on each request. To show different
   visitors, swap that file between the `aide_visit` and `scam_visitor` shots.
-- **Lifecycle webhooks.** The first run fires `device_removed` / `device_added` webhooks for the
-  device changes. They are not observation events and can be ignored.
+- **Lifecycle webhooks.** Adding a camera fires a `device_added` webhook. It is not an
+  observation event and can be ignored.
 - **Webhook types.** Scenarios emit `motion_detected` with `sub_type: human` (normalised to
   `motion.human`) and `button_press` (normalised to `ding`).
 
