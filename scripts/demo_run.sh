@@ -43,9 +43,17 @@ SCENARIO_FILE="sandbox/scenarios/${SCENARIO}.yml"
 [[ -f "$SCENARIO_FILE" ]] || SCENARIO_FILE="scripts/fallback_scenarios/${SCENARIO}.yml"
 [[ -f "$SCENARIO_FILE" ]] || { echo "no scenario file for '$SCENARIO'" >&2; exit 2; }
 
-for port in "$API_PORT" "$RING_PORT"; do
-  if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
-    echo "port $port is already in use; stop the other process first" >&2
+port_busy() {  # port, health url; lsof where it exists (macOS/Linux), else ask the server
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1
+  else
+    curl -fsS --max-time 2 "$2" >/dev/null 2>&1
+  fi
+}
+for check in "$API_PORT $API/health" "$RING_PORT $RING_API_BASE/_sandbox/health"; do
+  # shellcheck disable=SC2086
+  if port_busy $check; then
+    echo "port ${check%% *} is already in use; stop the other process first" >&2
     exit 1
   fi
 done
@@ -85,6 +93,10 @@ fi
 echo "    $ROUTINES"
 
 echo "4/6 Seed home-demo-1 from the Ring device list"
+# Put the demo clock on the story's start *before* the home exists: a scheduler tick on the
+# real clock (e.g. 22:30) would otherwise see "nothing today" and open a false late start.
+START="$(python -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1])).get("story_start") or "00:00")' "$SCENARIO_FILE")"
+curl -fsS -X POST "$API/_dev/clock" -H 'content-type: application/json' -d "{\"local\": \"$START\"}" >/dev/null
 python scripts/seed_home.py --api "$API" --routines "$ROUTINES" \
   | python -c 'import json,sys; r=json.load(sys.stdin); print("    zones:", sorted(set(r["home"]["devices"].values())), "| routines loaded:", r["routines_loaded"])'
 
