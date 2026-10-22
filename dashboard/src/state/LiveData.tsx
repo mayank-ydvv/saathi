@@ -1,9 +1,10 @@
 /* eslint-disable react-refresh/only-export-components -- provider + its hook belong together */
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { getAlerts, getHome, getStatus } from "../api/client";
 import type { Alert, Home, Status } from "../api/types";
 import { POLL_STATUS_MS } from "../config";
 import { type Polled, usePolling } from "../hooks/usePolling";
+import { startServerClockSync } from "../lib/clock";
 
 interface LiveData {
   home: Polled<Home>;
@@ -17,6 +18,7 @@ const LiveContext = createContext<LiveData | null>(null);
 
 /** Polls status + alerts once for the whole app (every 5 s while visible); home once. */
 export function LiveDataProvider({ children }: { children: ReactNode }) {
+  useEffect(() => startServerClockSync(), []);
   const home = usePolling((signal) => getHome({ signal }), null);
   const status = usePolling((signal) => getStatus({ signal }), POLL_STATUS_MS);
   const alerts = usePolling((signal) => getAlerts(20, { signal }), POLL_STATUS_MS);
