@@ -8,12 +8,14 @@ import { Card, ErrorCard, Loading } from "../components/States";
 import { VisitorPanel } from "../components/VisitorPanel";
 import { POLL_TIMELINE_MS } from "../config";
 import { useNow } from "../hooks/useNow";
+import { useTitle } from "../hooks/useTitle";
 import { usePolling } from "../hooks/usePolling";
 import { isOpen } from "../lib/alerts";
 import { todayIST } from "../lib/time";
 import { activeAlert, useLive } from "../state/LiveData";
 
 export function Today() {
+  useTitle("Today");
   const { home, status, alerts, refreshLive } = useLive();
   const now = useNow();
   const today = todayIST(now);
