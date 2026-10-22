@@ -38,6 +38,7 @@ def test_routine_fields():
         "today_first",
         "today_slots",
         "day_slots",  # added via contract change request, PR #6
+        "fired",  # added in PR #8
     ]
 
 

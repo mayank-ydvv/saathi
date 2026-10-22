@@ -222,6 +222,7 @@ Resources:
       Description: Ring webhook ingest (HMAC verify, store, routine update, night check)
       CodeUri: ../backend
       Handler: backend.handlers.ingest.handler
+      Timeout: 60  # doorbell events call Bedrock vision inline (20 s timeout, 2 attempts)
       Policies:
         - Statement:
             - Effect: Allow
@@ -256,7 +257,7 @@ Resources:
       Description: Every minute - local-midnight rollover, late-start and inactivity checks
       CodeUri: ../backend
       Handler: backend.handlers.tick.handler
-      Timeout: 30
+      Timeout: 60  # the first tick after digest_time writes the Bedrock digest
       Policies:
         - Statement:
             - Effect: Allow

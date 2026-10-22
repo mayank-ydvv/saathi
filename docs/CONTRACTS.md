@@ -8,6 +8,7 @@ This is the team's single source of truth. Everyone codes against these contract
 |---|---|---|
 | `Routine.day_slots: list[list[int]]` (last field, default `[]`) | Lets the day that leaves the 14-day window be subtracted from `hist` without a scan | PR #6 review |
 | The engine counts only `motion.human`, `motion` and `ding` as activity; `package` and `vehicle` are stored but ignored | A passing car or a parcel isn't evidence that the parent is up | PR #6 review |
+| `Routine.fired: dict[str, str]` (anomaly kind -> local ISO date it last fired, default `{}`) | Each anomaly kind fires at most once a local day; callers persist routines after a check that returned one | PR #8 |
 
 ## 4. SHARED CONTRACTS (everyone codes against these — do not change them)
 
@@ -55,6 +56,7 @@ class Routine:        # one per (home_id, zone)
     today_first: int | None       # first-activity minute today, None if no activity yet
     today_slots: set[int]         # slots active today (so a slot counts once per day)
     day_slots: list[list[int]] = []  # active slots of each closed day in the window, oldest first (added, PR #6)
+    fired: dict[str, str] = {}       # anomaly kind -> local ISO date it last fired (added, PR #8)
 
 @dataclass
 class Anomaly:

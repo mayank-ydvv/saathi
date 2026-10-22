@@ -7,6 +7,7 @@ import pytest
 from ring_sandbox import webhooks
 
 from backend.api.scheduler import Scheduler
+from backend.common import clock
 from backend.escalation.base import ImmediateEscalator
 from backend.escalation.ladder import LadderCore
 from backend.handlers import escalation_step, ingest, runtime, tick
@@ -55,6 +56,7 @@ def test_ingest_handler_rejects_bad_signature(wired, home):
 
 
 def test_tick_handler_returns_summary(wired):
+    clock.set_local_time("12:00")  # before the 21:00 digest, whatever the real time is
     assert tick.handler({"source": "aws.events"}) == {
         "anomalies": [],
         "alerts": [],

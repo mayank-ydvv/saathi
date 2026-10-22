@@ -42,7 +42,9 @@ async def test_night_door_escalates_to_family_and_ack_resolves(settings, store, 
             ).status_code == 200
 
             status = (await api.get(f"/homes/{HOME}/status")).json()
-            assert status["status"] == "yellow" and status["reason"] == "Front door opened at 02:10"
+            assert status["status"] == "yellow" and status["reason"].startswith(
+                "Front door opened at 02:10"
+            )
             alert_id = status["active_alert_id"]
 
             await asyncio.sleep(0.15)

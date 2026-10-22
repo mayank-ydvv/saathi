@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from backend.common import clock, engine, engine_stub
+from backend.common import clock, engine
 from backend.common.config import Settings
 from backend.common.events import event_from_dict
 from backend.common.store import Store
@@ -87,7 +87,11 @@ class Scheduler:
                 engine.rollover_day(routine, today)
                 self.store.put_routine(engine.routine_to_dict(routine))
                 result.rolled_over += 1
-        for anomaly in engine.check_tick(routines, now, self.cfg):
+        anomalies = engine.check_tick(routines, now, self.cfg)
+        if anomalies:  # check_tick records "fired today" markers on the routines: keep them
+            for routine in routines.values():
+                self.store.put_routine(engine.routine_to_dict(routine))
+        for anomaly in anomalies:
             result.anomalies.append(anomaly)
             alert = open_alert(self.store, anomaly, now)
             if alert is not None:
@@ -120,9 +124,9 @@ class Scheduler:
         ]
         try:
             text = engine.generate_digest(home, events, alerts, day)
-        except Exception:  # Bedrock unavailable: fall back to the template digest
-            log.exception("generate_digest failed; using template")
-            text = engine_stub.generate_digest(home, events, alerts, day)
+        except Exception:  # generate_digest has its own Bedrock fallback; this is a last resort
+            log.exception("generate_digest failed")
+            text = f"{home.get('parent_name', 'Your parent')}: {len(events)} events recorded today."
         record = self.store.put_digest(home_id, day, text, to_iso(now))
         if self.on_digest is not None:
             try:
