@@ -10,9 +10,9 @@ export function FamilyName() {
 
   if (!editing) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
         <Icon name="user" className="h-4 w-4" />
-        <span className="truncate">
+        <span className="min-w-0 break-words">
           Checking as <strong className="font-semibold text-ink">{name}</strong>
         </span>
         <button

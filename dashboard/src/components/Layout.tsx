@@ -33,12 +33,18 @@ function Tab({ to, label, icon, compact }: (typeof TABS)[number] & { compact?: b
 }
 
 export function Layout() {
-  const { home } = useLive();
+  const { home, status } = useLive();
   const now = useNow(1_000);
   const parent = home.data;
 
   return (
     <div className="min-h-dvh md:flex">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-xl bg-accent px-4 py-2 font-semibold text-accent-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Skip to content
+      </a>
       <aside className="hidden w-60 shrink-0 flex-col gap-6 border-r border-line px-4 py-6 md:flex">
         <Wordmark />
         <nav aria-label="Main" className="flex flex-col gap-1">
@@ -76,7 +82,16 @@ export function Layout() {
           </div>
         </header>
 
-        <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pt-5 pb-28 md:px-8 md:pb-10">
+        {status.error && status.data ? (
+          <p role="status" className="bg-warn-bg px-4 py-2 text-center text-sm font-medium text-warn-ink">
+            Can't reach Saathi right now — showing the last update. Retrying…
+          </p>
+        ) : null}
+        <main
+          id="main"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-5xl flex-1 px-4 pt-5 pb-28 outline-none md:px-8 md:pb-10"
+        >
           <Outlet />
         </main>
       </div>

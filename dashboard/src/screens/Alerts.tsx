@@ -5,9 +5,11 @@ import { Stepper } from "../components/Stepper";
 import { isOpen, resolvedSummary } from "../lib/alerts";
 import { kindLabel, zoneLabel } from "../lib/labels";
 import { formatDateIST, formatTimeIST } from "../lib/time";
+import { useTitle } from "../hooks/useTitle";
 import { useLive } from "../state/LiveData";
 
 export function Alerts() {
+  useTitle("Alerts");
   const { home, alerts } = useLive();
   const parentName = home.data?.parent_name;
 

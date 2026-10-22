@@ -2,11 +2,13 @@ import { useState } from "react";
 import { getDigest } from "../api/client";
 import { Icon } from "../components/Icon";
 import { Card, Empty, ErrorCard, Loading, PageTitle } from "../components/States";
+import { useTitle } from "../hooks/useTitle";
 import { usePolling } from "../hooks/usePolling";
 import { useNow } from "../hooks/useNow";
 import { formatDateIST, formatTimeIST, istToUtc, shiftDateKey, todayIST } from "../lib/time";
 
 export function Digest() {
+  useTitle("Digest");
   const now = useNow();
   const today = todayIST(now);
   const [date, setDate] = useState(today);

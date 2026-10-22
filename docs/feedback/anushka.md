@@ -38,6 +38,19 @@ Notes written as we build. One section per tool, then the friction log and featu
 - **Needs work:** jsdom doesn't implement `HTMLDialogElement.showModal()`, so the visitor panel needs a fallback to the `open` attribute in tests.
 - **Build with it again?** Yes.
 
+### Saathi REST API (our backend, contract 4.6)
+- **Used for:** everything the dashboard shows; checked against a live `uvicorn` + `ring-sandbox` run of `fall_day`.
+- **Worked well:** every response matched the contract types exactly (no adapters needed); `{"detail": "…"}` errors map cleanly to friendly messages; CORS for 5173 worked first time.
+- **Needs work:** the backend's demo clock (scenarios jump to e.g. 17:05) made the browser's real time disagree with the data ("Last seen: just now" for a 13:00 event). We follow `GET /_dev/clock` when it exists; a documented, non-dev way to read "server now" would be cleaner.
+- **Onboarding:** `scripts/demo_run.sh fall_day` to a red dashboard in under 2 minutes.
+- **Build with it again?** Yes.
+
+### ring-sandbox (via the team's demo script)
+- **Used for:** driving the real-API test: emulator → signed webhooks → backend → dashboard turning yellow then red.
+- **Worked well:** realistic end-to-end flow without any Ring hardware.
+- **Needs work:** placeholder snapshots are tiny PNGs, so the visitor panel can't be judged on real images without `--media-dir`.
+- **Build with it again?** Yes.
+
 ### npm 11
 - **Used for:** installing dependencies.
 - **Needs work:** `npm install` now prints `npm warn allow-scripts esbuild (postinstall …)` and skips esbuild's install script. Vite still works (esbuild's binary comes from its platform package), but the warning doesn't say whether anything is broken. CI uses Node 20 / npm 10, which doesn't have this behaviour, so the two can differ.
@@ -50,6 +63,8 @@ Notes written as we build. One section per tool, then the friction log and featu
 | Film the mock dashboard at any hour | Mock events were anchored to the real clock | Just after midnight the day had no events and the red state read "No kitchen movement by 00:04" | In mock mode the app runs on a story clock (today 16:30 IST, or `?time=HH:MM`) |
 | Share a helper from a component file | Exported `peaks()` next to `RoutineChart` | `react-refresh/only-export-components` warns (Fast Refresh only works for component-only files) | Moved helpers to `src/lib/` |
 | Hour labels on a 375px phone | 00:00 … 24:00 under each lane | Labels overlapped ("00:0006:00") | Show "00 06 12 18 24" below the `sm` breakpoint |
+| Real-API demo with the backend's demo clock | Ran `fall_day` (backend clock 17:05) and opened the dashboard (device time 00:28) | Timeline now-line at 00:28 and "Last seen: just now" for 13:00 events | Follow `GET /_dev/clock` in real mode; `useNow` re-renders as soon as the first sync lands |
+| Screenshots at 1280 px in an embedded browser pane | Emulated a 1280 px viewport wider than the pane | Captures came out cropped/misplaced (layout itself measured correctly: 240 px nav + 1024 px main) | Took laptop shots at 1024 px; verified 1280 by measuring the DOM |
 | Strict lint in tests | Used `!` non-null assertions in tests | `@typescript-eslint/no-non-null-assertion` (strict preset) fails the lint | A tiny `must()` helper in the tests |
 
 ## Feature requests

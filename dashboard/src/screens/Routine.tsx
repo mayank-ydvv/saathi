@@ -1,6 +1,7 @@
 import { getRoutine } from "../api/client";
 import { RoutineChart } from "../components/RoutineChart";
 import { Card, ErrorCard, Loading, PageTitle } from "../components/States";
+import { useTitle } from "../hooks/useTitle";
 import { usePolling } from "../hooks/usePolling";
 import { zoneLabel } from "../lib/labels";
 import { useLive } from "../state/LiveData";
@@ -8,6 +9,7 @@ import { useLive } from "../state/LiveData";
 const WINDOW_DAYS = 14;
 
 export function Routine() {
+  useTitle("Routine");
   const { home } = useLive();
   const routine = usePolling((signal) => getRoutine({ signal }), null);
   const parent = home.data?.parent_name ?? "your parent";
