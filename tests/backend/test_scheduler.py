@@ -93,7 +93,7 @@ def test_digest_falls_back_to_template_when_generator_fails(sched, learned, monk
 
     monkeypatch.setattr(engine, "generate_digest", broken)
     (digest,) = sched.tick(at(TODAY, "21:30")).digests
-    assert "No activity was recorded for Kamala" in digest["text"]
+    assert digest["text"] == "Kamala: 0 events recorded today."
 
 
 def test_digest_not_resent_after_restart(sched, learned, settings):

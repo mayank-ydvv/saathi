@@ -7,7 +7,7 @@ How the backend is put together, and the optional settings that are not in `.env
 
 | Folder | What lives there |
 |---|---|
-| `backend/common/` | settings, demo clock, time helpers, the `Store` interface with memory and DynamoDB/S3 implementations, the engine import facade (+ temporary stub) |
+| `backend/common/` | settings, demo clock, time helpers, the `Store` interface with memory and DynamoDB/S3 implementations, the engine import facade (re-exports `backend/engine` and `backend/digest`) |
 | `backend/ingest/` | `RingGateway` (ring-sandbox `RingClient`), webhook normalization, the ingest pipeline, `POST /webhooks/ring`, demo-home seeding |
 | `backend/escalation/` | alert records and dedupe, the escalation ladder, notifiers, voice nudge, Step Functions definition |
 | `backend/api/` | FastAPI app and REST endpoints (contract 4.6) |
