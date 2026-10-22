@@ -27,6 +27,27 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 - **Onboarding:** minutes.
 - **Build with it again?** Yes.
 
+### Amazon Polly
+- **Used for:** the spoken nudge on the parent app ("Good morning Kamala, are you okay? ...").
+- **Worked well:** the "Available voices" table is clear about engines per voice; `Kajal` gives a natural neural en-IN voice.
+- **Needs work:** bilingual voices (Kajal, Aditi) need `LanguageCode` or they may read English text with the other language's rules. The table marks them with an asterisk, but `synthesize_speech` examples don't mention it. Region availability for neural voices is on a separate page.
+- **Onboarding:** reading the docs to a working call shape took about 10 minutes; we cache MP3s by text hash so each phrase is synthesized once.
+- **Build with it again?** Yes.
+
+### Telegram Bot API
+- **Used for:** family/neighbour alerts with an inline "I'm checking" button; a button press acks the alert.
+- **Worked well:** plain HTTPS JSON; long polling (`getUpdates` with `timeout`) delivers button presses in about a second without a public URL, which suits local development.
+- **Needs work:** `callback_data` is limited to 64 bytes, so we keep it to `ack:<alert_id>:<audience>`. You must `answerCallbackQuery` or the button spins on the user's phone.
+- **Onboarding:** BotFather to first message in minutes.
+- **Build with it again?** Yes, free and instant for demos.
+
+### AWS Step Functions
+- **Used for:** the escalation ladder on AWS: one execution per alert, `waitForTaskToken` Tasks with timeouts, `SendTaskSuccess` on ack.
+- **Worked well:** the callback-token pattern maps one-to-one onto "wait N minutes unless someone acknowledges". `TimeoutSecondsPath` lets the demo pass 10–20 s waits per execution without a second state machine.
+- **Needs work:** a late `SendTaskSuccess` for a token whose Task already timed out raises `TaskTimedOut`. That's expected, but every caller has to catch it. It would help to have an idempotent "ignore if finished" option.
+- **Onboarding:** designing the ASL took about 30 minutes; local testing needs fakes (no local runtime in our setup).
+- **Build with it again?** Yes.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |
@@ -34,6 +55,8 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | Keep the contract doc verbatim and pass `ruff format --check` | Copied section 4 into `docs/CONTRACTS.md` | ruff reformatted the Python snippets inside the Markdown | Excluded `*.md` from `ruff format` |
 | Test "no snapshot when nothing was recorded" | Followed the README fidelity table (416 when nothing recorded) | Installed 0.5.0 wheel returned a frame anyway | Read the installed `emulator.py`; simulated the 416 in our unit test |
 | Store doorbell snapshots as JPEG | Requested `format=jpeg` | Emulator placeholder is a PNG | Detect the image type from magic bytes before saving |
+| Name a pydantic field `date` next to `from datetime import date` | `date: date | None` in a request model | `TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'` at import | Renamed the field to `day` |
+| Keep tests from touching real AWS | Polly client built lazily | boto3 can look up instance metadata on CI runners | `AWS_EC2_METADATA_DISABLED=true` and no credentials in the test fixtures |
 | Import `backend` in tests | Editable install with uv | `ModuleNotFoundError: backend` under pytest (project path contains spaces) | `pythonpath = ["."]` in the pytest config |
 
 ## Feature requests
@@ -42,4 +65,5 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 |---|---|---|
 | ring-sandbox: a documented table mapping webhook `type`/`sub_type` to history `event_type` | Every integrator has to normalize both shapes | important |
 | ring-sandbox: publish a release matching `main` (416 on empty snapshot windows, offline 503 on media) | The README documents behaviour the PyPI wheel doesn't have yet | important |
+| Step Functions: an idempotent SendTaskSuccess (no error when the task already finished) | Ack and timeout naturally race in human-in-the-loop flows | nice-to-have |
 | ring-sandbox: an `--world` preset or YAML for custom device sets (indoor cameras) | Elder-care and home-monitoring use cases need indoor zones | nice-to-have |
