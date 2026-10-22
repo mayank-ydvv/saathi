@@ -18,7 +18,9 @@ ZONES: tuple[str, ...] = ("front_door", "kitchen", "living_room", "bedroom")
 SLOTS_PER_DAY = 96
 SLOT_MINUTES = 15
 HISTORY_DAYS = 14
-ENGINE_EVENT_TYPES = frozenset({"motion.human", "motion", "ding", "package", "vehicle"})
+# Activity the engine learns from (accepted change, see docs/CONTRACTS.md): package and
+# vehicle events are stored but aren't evidence the parent is up.
+ENGINE_EVENT_TYPES = frozenset({"motion.human", "motion", "ding"})
 
 # Short ladder waits used when DEMO_MODE=true (contract 4.4: 10–20 s each).
 DEMO_WAITS = {"SUSPECT": 10, "NUDGE_PARENT": 15, "ALERT_FAMILY": 20}

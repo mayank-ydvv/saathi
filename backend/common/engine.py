@@ -6,7 +6,11 @@ falls back to `engine_stub` until then, so callers never change their imports.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from backend.common import engine_stub as _stub
+from backend.common.config import TIMEZONE
+from backend.engine.models import Event, Routine
 
 try:
     from backend.engine.routine import (
@@ -32,7 +36,19 @@ except ImportError:
 try:
     from backend.engine.backfill import build_routines
 except ImportError:
-    build_routines = _stub.build_routines
+
+    def build_routines(events: Iterable[Event], tz: str = TIMEZONE) -> dict[str, Routine]:
+        """Replay events oldest-first with whichever routine functions are active, so the
+        result always matches what live ingest produces (e.g. the real engine's day_slots).
+        O(n log n) for the one sort."""
+        routines: dict[str, Routine] = {}
+        for e in sorted(events, key=lambda ev: ev.ts):
+            r = routines.get(e.zone)
+            if r is None:
+                r = routines[e.zone] = new_routine(e.home_id, e.zone)
+            update_on_event(r, e, tz)
+        return routines
+
 
 try:
     from backend.digest import describe_visitor, generate_digest, weekly_trend
