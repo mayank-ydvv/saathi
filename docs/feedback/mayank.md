@@ -48,6 +48,13 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 - **Onboarding:** designing the ASL took about 30 minutes; local testing needs fakes (no local runtime in our setup).
 - **Build with it again?** Yes.
 
+### AWS SAM CLI (1.169)
+- **Used for:** the whole AWS stack (tables, bucket, HTTP API, Lambdas, schedules, state machine) and `sam build` packaging.
+- **Worked well:** `sam validate --lint` (cfn-lint built in) works offline with no credentials. `DefinitionSubstitutions` keeps the state machine as a plain, testable JSON file.
+- **Needs work:** there's no ignore file for the Python builder, so a function's `CodeUri` either includes the whole repo (frontends, `.venv`) or you switch to `BuildMethod: makefile`. We had to read `aws_lambda_builders/workflows/custom_make` to learn that `CodeUri` is copied to a scratch dir and the Makefile comes from `ContextPath`. An unquoted `Path: /{proxy+}` inside a YAML flow mapping fails with a parser error ("expected ',' or '}'") that doesn't hint at quoting.
+- **Onboarding:** install to first successful `sam build` in about 20 minutes, most of it figuring out packaging.
+- **Build with it again?** Yes, but we'd start from the makefile builder.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |
@@ -57,6 +64,8 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | Store doorbell snapshots as JPEG | Requested `format=jpeg` | Emulator placeholder is a PNG | Detect the image type from magic bytes before saving |
 | Name a pydantic field `date` next to `from datetime import date` | `date: date | None` in a request model | `TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'` at import | Renamed the field to `day` |
 | Keep tests from touching real AWS | Polly client built lazily | boto3 can look up instance metadata on CI runners | `AWS_EC2_METADATA_DISABLED=true` and no credentials in the test fixtures |
+| Package only `backend/` for Lambda | `CodeUri: ..` with the Python builder | Would copy the whole repo including `.venv` and frontends | `CodeUri: ../backend` + `BuildMethod: makefile` + `ContextPath: .`; one shared dependency layer of manylinux wheels |
+| Catch-all HTTP API route | `Path: /{proxy+}` in a `{ ... }` flow mapping | YAML parse error | Quote the path: `Path: "/{proxy+}"` |
 | Import `backend` in tests | Editable install with uv | `ModuleNotFoundError: backend` under pytest (project path contains spaces) | `pythonpath = ["."]` in the pytest config |
 
 ## Feature requests
@@ -66,4 +75,5 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | ring-sandbox: a documented table mapping webhook `type`/`sub_type` to history `event_type` | Every integrator has to normalize both shapes | important |
 | ring-sandbox: publish a release matching `main` (416 on empty snapshot windows, offline 503 on media) | The README documents behaviour the PyPI wheel doesn't have yet | important |
 | Step Functions: an idempotent SendTaskSuccess (no error when the task already finished) | Ack and timeout naturally race in human-in-the-loop flows | nice-to-have |
+| SAM: a `.samignore` (or `Exclude`) for the Python builder | Monorepos shouldn't need a Makefile just to skip folders | important |
 | ring-sandbox: an `--world` preset or YAML for custom device sets (indoor cameras) | Elder-care and home-monitoring use cases need indoor zones | nice-to-have |
