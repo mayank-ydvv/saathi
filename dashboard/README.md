@@ -30,6 +30,13 @@ Settings come from `VITE_*` variables (copy `.env.example` to `.env`):
 With the real API: start the backend (`uvicorn backend.api.main:app --port 8000` from the
 repo root, or `scripts/demo_run.sh fall_day`), then `VITE_USE_MOCK=false npm run dev`.
 
+**Demo clock.** Scenarios move the backend's clock (e.g. `fall_day` checks at 17:05 IST). When
+the backend runs with `DEMO_MODE=true` it serves `GET /_dev/clock`, and the dashboard follows that
+time (re-synced every 10 s) so the header clock, the timeline's now-line and "Last seen … ago"
+agree with the alerts. Without that endpoint (production) it uses the device's time.
+
+Status and alerts refresh every 5 s and the timeline every 30 s, only while the tab is visible.
+
 ### Mock mode for filming
 
 The mock day is Kamala's in Chennai: 61 events over four zones, two doorbell visitors (one
@@ -44,3 +51,18 @@ flagged), a resolved late start with every escalation step, and an open alert.
 
 Both parameters combine, e.g. `/?mock=green&time=21:30`. Pressing **I'm checking** in mock
 mode resolves the alert and the status turns green, like the real backend.
+
+## Screenshots
+
+Mock data, light, laptop (1024 px): [Today · red](docs/screenshots/today-red-laptop.jpg) ·
+[Today · yellow](docs/screenshots/today-yellow-laptop.jpg) · [Today · green](docs/screenshots/today-green-laptop.jpg) ·
+[Alerts](docs/screenshots/alerts-laptop.jpg) · [Digest](docs/screenshots/digest-laptop.jpg) ·
+[Routine](docs/screenshots/routine-laptop.jpg)
+
+Phone (375 px): [Today · red](docs/screenshots/today-red-phone.jpg) ·
+[Caution visitor](docs/screenshots/visitor-caution-phone.jpg) · dark: [Today · red](docs/screenshots/today-red-phone-dark.jpg),
+[Routine](docs/screenshots/routine-phone-dark.jpg)
+
+Real backend (`fall_day`, dark): [yellow](docs/screenshots/real-api-yellow-dark.jpg) →
+[red](docs/screenshots/real-api-red-dark.jpg) → [after I'm checking](docs/screenshots/real-api-after-ack-dark.jpg) ·
+[Alerts](docs/screenshots/real-api-alerts-dark.jpg)
