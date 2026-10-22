@@ -6,7 +6,7 @@ as kind -> local ISO date. The functions write that marker, so callers must pers
 routine after a check that returned an anomaly.
 
 Rules, one sentence each:
-- late_start: no activity in a zone today by usual first time + max(3 x MAD, 30 min).
+- late_start: no kitchen / bedroom activity today by usual first time + max(3 x MAD, 30 min).
   Cold start (< 5 days learned): kitchen only, against 08:00 + 30 min.
 - long_inactivity: during waking hours, no movement anywhere for 4 h, counting the night's
   sleep only from waking_start (so the morning after a normal night never fires).
@@ -23,6 +23,9 @@ from backend.engine.models import Anomaly, EngineConfig, Event, Routine
 from backend.engine.routine import ACTIVITY_TYPES, SLOT_MINUTES, TIMEZONE
 
 NIGHT_ZONES = frozenset({"front_door", "kitchen"})
+# Only these zones say "the day started". A late front door or living room is a normal day
+# (no milk run, reading in bed) and would bury the real alert behind a false one.
+LATE_START_ZONES = frozenset({"kitchen", "bedroom"})
 COLD_START_ZONE = "kitchen"
 
 
@@ -74,7 +77,7 @@ def check_tick(
 def _late_start(
     r: Routine, now: datetime, today: date, minute: int, cfg: EngineConfig
 ) -> Anomaly | None:
-    if r.today == today and r.today_first is not None:
+    if r.zone not in LATE_START_ZONES or (r.today == today and r.today_first is not None):
         return None
     if r.days_seen >= cfg.min_days_for_checks and r.median_first is not None:
         usual = r.median_first
