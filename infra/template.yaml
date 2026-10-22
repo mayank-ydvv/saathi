@@ -1,0 +1,383 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Saathi - elder-care guardian on Ring. Ring webhooks -> Lambda -> DynamoDB/S3; a 1-minute
+  EventBridge tick runs the anomaly checks; Step Functions runs the escalation ladder;
+  Polly speaks the nudge; Bedrock writes the digest; Telegram/SNS alert the family.
+
+Parameters:
+  RingApiBase:
+    Type: String
+    Default: https://api.amazonvision.com
+    Description: Ring Partner API base (HTTPS). Use a tunnel URL to reach a local ring-sandbox emulator.
+  RingToken:
+    Type: String
+    NoEcho: true
+    Default: dummy
+  RingWebhookHmacKey:
+    Type: String
+    NoEcho: true
+    Description: HMAC key Ring (or ring-sandbox) signs webhooks with.
+  TelegramBotToken:
+    Type: String
+    NoEcho: true
+    Default: ""
+  TelegramWebhookSecret:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: secret_token passed to Telegram setWebhook; checked on /telegram/webhook.
+  TelegramFamilyChatId:
+    Type: String
+    Default: ""
+  TelegramNeighbourChatId:
+    Type: String
+    Default: ""
+  BedrockModelId:
+    Type: String
+    Default: ""
+  DemoMode:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Optional email subscribed to the SNS alert topic (second channel).
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Architectures: [x86_64]
+    MemorySize: 512
+    Timeout: 15
+    Layers: [!Ref DepsLayer]
+    Environment:
+      Variables:
+        STORAGE: dynamo
+        ESCALATOR: stepfunctions
+        TELEGRAM_MODE: webhook
+        DEMO_MODE: !Ref DemoMode
+        RING_API_BASE: !Ref RingApiBase
+        RING_TOKEN: !Ref RingToken
+        RING_WEBHOOK_HMAC_KEY: !Ref RingWebhookHmacKey
+        TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+        TELEGRAM_WEBHOOK_SECRET: !Ref TelegramWebhookSecret
+        TELEGRAM_FAMILY_CHAT_ID: !Ref TelegramFamilyChatId
+        TELEGRAM_NEIGHBOUR_CHAT_ID: !Ref TelegramNeighbourChatId
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        BLOB_BUCKET: !Ref BlobBucket
+        SNS_TOPIC_ARN: !Ref AlertTopic
+        STATE_MACHINE_ARN: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+
+Resources:
+  # ---------------------------------------------------------------- storage (contract 4.5)
+  EventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: saathi-events
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: home_id, AttributeType: S }
+        - { AttributeName: ts, AttributeType: S }
+      KeySchema:
+        - { AttributeName: home_id, KeyType: HASH }
+        - { AttributeName: ts, KeyType: RANGE }
+
+  RoutineTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: saathi-routine
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+
+  AlertsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: saathi-alerts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: home_id, AttributeType: S }
+        - { AttributeName: alert_id, AttributeType: S }
+      KeySchema:
+        - { AttributeName: home_id, KeyType: HASH }
+        - { AttributeName: alert_id, KeyType: RANGE }
+
+  HomesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: saathi-homes
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: home_id, AttributeType: S }
+      KeySchema:
+        - { AttributeName: home_id, KeyType: HASH }
+
+  BlobBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-snapshots
+            Status: Enabled
+            Prefix: snapshots/
+            ExpirationInDays: 30
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Saathi alerts
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  # ---------------------------------------------------------------- code
+  DepsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: saathi-deps
+      ContentUri: .
+      CompatibleRuntimes: [python3.11]
+    Metadata:
+      BuildMethod: makefile
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - http://localhost:5173
+          - http://localhost:5174
+        AllowMethods: [GET, POST, OPTIONS]
+        AllowHeaders: [content-type]
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: REST API for the dashboard and parent app (FastAPI via Mangum)
+      CodeUri: ../backend
+      Handler: backend.handlers.api.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:Query, dynamodb:BatchGetItem]
+              Resource:
+                - !GetAtt EventsTable.Arn
+                - !GetAtt RoutineTable.Arn
+                - !GetAtt AlertsTable.Arn
+                - !GetAtt HomesTable.Arn
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${BlobBucket.Arn}/*
+            - Effect: Allow
+              Action: polly:SynthesizeSpeech
+              Resource: "*"
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource:
+                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
+                - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref AlertTopic
+            - Effect: Allow
+              Action: [states:StartExecution]
+              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+            - Effect: Allow
+              Action: [states:SendTaskSuccess]
+              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+      Events:
+        Root:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Path: /, Method: ANY }
+        Proxy:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Path: "/{proxy+}", Method: ANY }
+    Metadata:
+      BuildMethod: makefile
+      ContextPath: .
+
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Ring webhook ingest (HMAC verify, store, routine update, night check)
+      CodeUri: ../backend
+      Handler: backend.handlers.ingest.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:Query]
+              Resource:
+                - !GetAtt EventsTable.Arn
+                - !GetAtt RoutineTable.Arn
+                - !GetAtt AlertsTable.Arn
+                - !GetAtt HomesTable.Arn
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${BlobBucket.Arn}/*
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource:
+                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
+                - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+            - Effect: Allow
+              Action: [states:StartExecution]
+              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+      Events:
+        RingWebhook:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Path: /webhooks/ring, Method: POST }
+    Metadata:
+      BuildMethod: makefile
+      ContextPath: .
+
+  TickFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Every minute - local-midnight rollover, late-start and inactivity checks
+      CodeUri: ../backend
+      Handler: backend.handlers.tick.handler
+      Timeout: 30
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query, dynamodb:BatchGetItem]
+              Resource:
+                - !GetAtt EventsTable.Arn
+                - !GetAtt RoutineTable.Arn
+                - !GetAtt AlertsTable.Arn
+                - !GetAtt HomesTable.Arn
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${BlobBucket.Arn}/*
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource:
+                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
+                - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref AlertTopic
+            - Effect: Allow
+              Action: [states:StartExecution]
+              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+      Events:
+        EveryMinute:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+    Metadata:
+      BuildMethod: makefile
+      ContextPath: .
+
+  DigestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: 21:00 IST - Bedrock evening digest to the family
+      CodeUri: ../backend
+      Handler: backend.handlers.digest.handler
+      Timeout: 60
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:Query]
+              Resource:
+                - !GetAtt EventsTable.Arn
+                - !GetAtt AlertsTable.Arn
+                - !GetAtt HomesTable.Arn
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${BlobBucket.Arn}/*
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource:
+                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
+                - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref AlertTopic
+      Events:
+        NinePmIst:
+          Type: Schedule
+          Properties:
+            Schedule: cron(30 15 * * ? *)  # 15:30 UTC = 21:00 Asia/Kolkata
+    Metadata:
+      BuildMethod: makefile
+      ContextPath: .
+
+  EscalationStepFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: One escalation step (called by each waitForTaskToken Task)
+      CodeUri: ../backend
+      Handler: backend.handlers.escalation_step.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query, dynamodb:BatchGetItem]
+              Resource:
+                - !GetAtt RoutineTable.Arn
+                - !GetAtt AlertsTable.Arn
+                - !GetAtt HomesTable.Arn
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${BlobBucket.Arn}/*
+            - Effect: Allow
+              Action: polly:SynthesizeSpeech
+              Resource: "*"
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref AlertTopic
+            - Effect: Allow
+              Action: [states:SendTaskSuccess]
+              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+    Metadata:
+      BuildMethod: makefile
+      ContextPath: .
+
+  # ---------------------------------------------------------------- escalation ladder
+  EscalationStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: saathi-escalation
+      Type: STANDARD
+      DefinitionUri: ../backend/escalation/state_machine.asl.json
+      DefinitionSubstitutions:
+        EscalationStepFunctionArn: !GetAtt EscalationStepFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref EscalationStepFunction
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for VITE_API_BASE
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  RingWebhookUrl:
+    Description: Point ring-sandbox / Ring webhooks here
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/webhooks/ring
+  TelegramWebhookUrl:
+    Description: Pass to Telegram setWebhook
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/telegram/webhook
+  BlobBucketName:
+    Value: !Ref BlobBucket
+  StateMachineArn:
+    Value: !Ref EscalationStateMachine
