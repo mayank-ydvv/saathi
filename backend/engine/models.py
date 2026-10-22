@@ -5,7 +5,7 @@ Owned by Krishnaditya. Field names and types are a shared contract: see docs/CON
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
 
@@ -37,6 +37,9 @@ class Routine:
     today: date | None  # local date currently being accumulated
     today_first: int | None  # first-activity minute today, None if no activity yet
     today_slots: set[int]  # slots active today (so a slot counts once per day)
+    # Additive (allowed by 4.3): active slots of each closed day in the window, oldest first,
+    # so the day that falls out of the D-day window can be subtracted from hist without a scan.
+    day_slots: list[list[int]] = field(default_factory=list)
 
 
 @dataclass(slots=True)
