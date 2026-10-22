@@ -30,19 +30,23 @@ def resolve(
     """Move an open alert straight to RESOLVED. Returns (alert, changed).
 
     Idempotent: acking a resolved alert returns it unchanged, keeping the first acker.
+    The write is conditional on the state just read, so a ladder step racing this ack
+    (another Lambda) can't overwrite RESOLVED; on a lost race we re-read and retry.
     """
-    alert = store.find_alert(alert_id)
-    if alert is None:
-        return None, False
-    if alert["state"] not in OPEN_STATES:
-        return alert, False
-    at = to_iso(now)
-    alert["state"] = "RESOLVED"
-    alert["resolved_at"] = at
-    alert["acked_by"] = {"by": by, "name": name}
-    alert["steps"] = [*alert["steps"], {"state": "RESOLVED", "at": at}]
-    store.put_alert(alert)
-    return alert, True
+    for _ in range(3):
+        alert = store.find_alert(alert_id)
+        if alert is None:
+            return None, False
+        if alert["state"] not in OPEN_STATES:
+            return alert, False
+        previous, at = alert["state"], to_iso(now)
+        alert["state"] = "RESOLVED"
+        alert["resolved_at"] = at
+        alert["acked_by"] = {"by": by, "name": name}
+        alert["steps"] = [*alert["steps"], {"state": "RESOLVED", "at": at}]
+        if store.put_alert(alert, expected_state=previous):
+            return alert, True
+    raise RuntimeError(f"could not resolve {alert_id}: concurrent updates")
 
 
 class ImmediateEscalator:

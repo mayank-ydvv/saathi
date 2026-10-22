@@ -17,6 +17,16 @@ RING_BASE = "http://localhost:8787"
 
 
 @pytest.fixture(autouse=True)
+def _no_aws(monkeypatch):
+    """Never reach real AWS from tests: no credentials, no instance-metadata lookups."""
+    monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
+    for var in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_PROFILE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", "/nonexistent")
+    monkeypatch.setenv("AWS_CONFIG_FILE", "/nonexistent")
+
+
+@pytest.fixture(autouse=True)
 def _reset_clock():
     clock.reset()
     yield
