@@ -40,6 +40,8 @@ class Routine:
     # Additive (allowed by 4.3): active slots of each closed day in the window, oldest first,
     # so the day that falls out of the D-day window can be subtracted from hist without a scan.
     day_slots: list[list[int]] = field(default_factory=list)
+    # Additive: anomaly kind -> local ISO date it last fired, so each kind fires once a day.
+    fired: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

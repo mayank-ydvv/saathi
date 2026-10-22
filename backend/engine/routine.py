@@ -42,6 +42,7 @@ def new_routine(home_id: str, zone: str) -> Routine:
         today_first=None,
         today_slots=set(),
         day_slots=[],
+        fired={},
     )
 
 
@@ -105,6 +106,7 @@ def routine_to_dict(r: Routine) -> dict:
         "today_first": r.today_first,
         "today_slots": sorted(r.today_slots),
         "day_slots": [list(d) for d in r.day_slots],
+        "fired": dict(r.fired),
     }
 
 
@@ -123,6 +125,7 @@ def routine_from_dict(d: dict) -> Routine:
         today_first=_opt_int(d.get("today_first")),
         today_slots={int(x) for x in d.get("today_slots") or []},
         day_slots=[[int(s) for s in day] for day in d.get("day_slots") or []],
+        fired=dict(d.get("fired") or {}),
     )
 
 
