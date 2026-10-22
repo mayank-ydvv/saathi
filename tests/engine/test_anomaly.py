@@ -161,3 +161,19 @@ def test_night_activity_ignored_in_waking_hours_other_zones_and_cold_start():
 def test_kitchen_night_reason():
     a = check_event(learned("kitchen"), ev("kitchen", "03:00"), CFG)
     assert a is not None and a.reason == "Kitchen movement at 03:00 — unusual for this hour"
+
+
+def test_late_start_only_for_day_start_zones():
+    # A late front door or living room is normal (no milk today, reading in bed); only the
+    # kitchen and bedroom say whether the day started.
+    door, living = learned("front_door", first="06:30"), learned("living_room", first="08:30")
+    assert (
+        only(
+            check_tick({"front_door": door, "living_room": living}, at("12:00"), CFG), "late_start"
+        )
+        == []
+    )
+    bedroom = learned("bedroom", first="07:00")
+    assert kinds(only(check_tick({"bedroom": bedroom}, at("08:00"), CFG), "late_start")) == [
+        ("late_start", "bedroom")
+    ]
