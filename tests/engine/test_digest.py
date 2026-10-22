@@ -1,14 +1,16 @@
 """Phase 4: digest, visitor description and weekly trend with a mocked Bedrock (no network)."""
 
 import json
-from datetime import date
+from datetime import date, datetime, time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 
 from backend.digest import bedrock, describe_visitor, generate_digest, weekly_trend
-from backend.digest.daily import compute_facts
+from backend.digest.daily import compute_facts, fallback_digest
 from backend.engine.backfill import read_jsonl
+from backend.engine.models import Event
 from backend.engine.routine import new_routine
 
 FIXTURES = Path(__file__).parents[2] / "sandbox" / "fixtures"
@@ -62,6 +64,20 @@ def test_fall_day_quiet_period_and_alert_facts():
     }
     f = compute_facts(HOME, read_jsonl(FIXTURES / "fall_day.jsonl"), [alert], DAY)
     assert f["alerts"] == [{"reason": alert["reason"], "state": "RESOLVED", "resolved_by": "Priya"}]
+
+
+def test_outing_needs_door_twice_with_nothing_indoors_between():
+    def ev(zone: str, hhmm: str) -> Event:  # IST hh:mm on DAY
+        ts = datetime.combine(DAY, time.fromisoformat(hhmm), ZoneInfo("Asia/Kolkata"))
+        return Event(f"{zone}-{hhmm}", "home-demo-1", "dev", zone, "motion", ts)
+
+    out = [ev("front_door", "10:00"), ev("front_door", "11:00"), ev("kitchen", "11:05")]
+    stayed = [ev("front_door", "12:00"), ev("kitchen", "12:05"), ev("front_door", "13:00")]
+    stayed.append(ev("kitchen", "13:05"))
+    quick = [ev("front_door", "14:00"), ev("front_door", "14:05")]  # under 15 min
+    f = compute_facts(HOME, out + stayed + quick, [], DAY)
+    assert f["outings"] == 1
+    assert " Went out once." in fallback_digest(f)
 
 
 def test_digest_sends_only_facts_to_bedrock(fake):
@@ -133,6 +149,7 @@ def test_visitor_unknown_caution_and_image_block(fake):
         '{"summary": "x", "person_count": true, "uniform_or_badge": false, "carrying_package": 0}',
         '{"summary": "x", "person_count": 1, "uniform_or_badge": "no", "carrying_package": false}',
         "[1, 2]",
+        '{"summary": x}',
     ],
 )
 def test_visitor_bad_json_safe_default(fake, reply):
