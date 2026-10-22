@@ -25,7 +25,7 @@ ANOMALY_DAY = FIRST_NORMAL_DAY + timedelta(days=NORMAL_DAYS)  # 2026-10-22
 DEVICES = {
     "front_door": "dev_front_door",
     "kitchen": "dev_kitchen_cam",
-    "living_room": "dev_living_cam",
+    "living_room": "dev_living_room_cam",
     "bedroom": "dev_bedroom_cam",
 }
 
