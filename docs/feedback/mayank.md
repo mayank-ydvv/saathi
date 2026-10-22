@@ -66,6 +66,8 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | Keep tests from touching real AWS | Polly client built lazily | boto3 can look up instance metadata on CI runners | `AWS_EC2_METADATA_DISABLED=true` and no credentials in the test fixtures |
 | Package only `backend/` for Lambda | `CodeUri: ..` with the Python builder | Would copy the whole repo including `.venv` and frontends | `CodeUri: ../backend` + `BuildMethod: makefile` + `ContextPath: .`; one shared dependency layer of manylinux wheels |
 | Catch-all HTTP API route | `Path: /{proxy+}` in a `{ ... }` flow mapping | YAML parse error | Quote the path: `Path: "/{proxy+}"` |
+| Deterministic demo day (10:20 late start) with `ring-sandbox play` | Set the backend clock to the story end and played the YAML | `play` back-dates every event relative to the real "now", so the minute scheduler saw "19:30, no events yet" and would raise false alarms mid-replay | A driver that moves our demo clock to each step's story time and injects the step via `POST /_sandbox/events` (same call `play` makes), waiting until the API stored it |
+| `demo_run.sh --exit` left ports busy | `kill` on exit | uvicorn/emulator were still shutting down when the script returned | `wait` on the PIDs in the cleanup trap |
 | Import `backend` in tests | Editable install with uv | `ModuleNotFoundError: backend` under pytest (project path contains spaces) | `pythonpath = ["."]` in the pytest config |
 
 ## Feature requests
@@ -76,4 +78,5 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | ring-sandbox: publish a release matching `main` (416 on empty snapshot windows, offline 503 on media) | The README documents behaviour the PyPI wheel doesn't have yet | important |
 | Step Functions: an idempotent SendTaskSuccess (no error when the task already finished) | Ack and timeout naturally race in human-in-the-loop flows | nice-to-have |
 | SAM: a `.samignore` (or `Exclude`) for the Python builder | Monorepos shouldn't need a Makefile just to skip folders | important |
+| ring-sandbox: `play --start-at <ISO time>` (or per-step absolute `at`) | Demos and tests that depend on time of day ("no kitchen motion by 10:20") need events at specific wall-clock times | important |
 | ring-sandbox: an `--world` preset or YAML for custom device sets (indoor cameras) | Elder-care and home-monitoring use cases need indoor zones | nice-to-have |

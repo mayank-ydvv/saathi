@@ -1,0 +1,12 @@
+# Placeholder until sandbox/scenarios/scam_visitor.yml lands (Debadrita).
+name: scam_visitor
+description: Normal morning, then an unknown man rings the doorbell at 11:30 - snapshot + visitor description.
+story_start: "06:45"
+steps:
+  - { offset_s: 0, type: motion_detected, sub_type: human, device: Bedroom Cam }
+  - { offset_s: 2700, type: motion_detected, sub_type: human, device: Front Door }
+  - { offset_s: 4800, type: motion_detected, sub_type: human, device: Kitchen Cam }
+  - { offset_s: 11700, type: motion_detected, sub_type: human, device: Living Room Cam }
+  - { offset_s: 17100, type: motion_detected, sub_type: human, device: Front Door }
+  - { offset_s: 17110, type: button_press, device: Front Door }
+  - { offset_s: 17160, type: motion_detected, sub_type: human, device: Front Door }

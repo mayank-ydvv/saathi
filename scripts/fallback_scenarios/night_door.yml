@@ -1,0 +1,7 @@
+# Placeholder until sandbox/scenarios/night_door.yml lands (Debadrita).
+name: night_door
+description: The front door camera sees someone at 02:10 - a slot that is almost never active.
+story_start: "02:10"
+steps:
+  - { offset_s: 0, type: motion_detected, sub_type: human, device: Front Door }
+  - { offset_s: 40, type: motion_detected, sub_type: human, device: Front Door }
