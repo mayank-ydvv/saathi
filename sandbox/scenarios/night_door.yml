@@ -7,6 +7,7 @@
 
 name: night_door
 description: Normal day plus a person at the front door at 02:10. Triggers night_activity.
+story_start: "00:00"   # scripts/demo_driver.py: offset_s counts from local midnight
 steps:
   - offset_s: 7800   # 02:10 front door in the middle of the night
     type: motion_detected

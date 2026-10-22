@@ -10,6 +10,7 @@
 
 name: late_morning
 description: Up at 06:50 but no kitchen activity until 10:40. Triggers late_start (kitchen).
+story_start: "00:00"   # scripts/demo_driver.py: offset_s counts from local midnight
 steps:
   - offset_s: 24600   # 06:50 wakes up
     type: motion_detected

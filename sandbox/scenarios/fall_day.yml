@@ -7,6 +7,8 @@
 
 name: fall_day
 description: Normal morning, last motion in the living room at 13:00, then silence. Triggers long_inactivity.
+story_start: "00:00"   # scripts/demo_driver.py: offset_s counts from local midnight
+check_at: "17:05"      # demo_driver forces a tick 4 h after the last motion (13:00)
 steps:
   - offset_s: 24600   # 06:50 wakes up
     type: motion_detected
