@@ -27,6 +27,7 @@ How the backend is put together, and the optional settings that are not in `.env
 | `STATE_MACHINE_ARN` | empty | Escalation state machine (ESCALATOR=stepfunctions) |
 | `PUBLIC_BASE_URL` | `http://localhost:8000` | Base for blob URLs in memory mode and for links in messages |
 | `TELEGRAM_MODE` | `poll` | `poll` (getUpdates loop, local) or `webhook` (Telegram calls `/telegram/webhook`, AWS) |
+| `TELEGRAM_WEBHOOK_SECRET` | empty | `secret_token` given to Telegram `setWebhook`; checked on `/telegram/webhook` |
 | `ROUTINES_FILE` | `sandbox/fixtures/routines_home-demo-1.json` | Backfill output loaded by seeding |
 | `FAMILY_NAME`, `NEIGHBOUR_NAME` | `Priya`, `Ravi` | Contact names used in messages and acks |
 

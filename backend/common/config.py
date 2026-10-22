@@ -69,6 +69,7 @@ class Settings:
     state_machine_arn: str = ""
     public_base_url: str = "http://localhost:8000"
     telegram_mode: str = "poll"
+    telegram_webhook_secret: str = ""
     routines_file: str = "sandbox/fixtures/routines_home-demo-1.json"
     family_name: str = "Priya"
     neighbour_name: str = "Ravi"
@@ -120,6 +121,7 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
         state_machine_arn=env.get("STATE_MACHINE_ARN", ""),
         public_base_url=env.get("PUBLIC_BASE_URL", d.public_base_url).rstrip("/"),
         telegram_mode=env.get("TELEGRAM_MODE", d.telegram_mode).strip().lower(),
+        telegram_webhook_secret=env.get("TELEGRAM_WEBHOOK_SECRET", ""),
         routines_file=env.get("ROUTINES_FILE", d.routines_file),
         family_name=env.get("FAMILY_NAME", d.family_name),
         neighbour_name=env.get("NEIGHBOUR_NAME", d.neighbour_name),
