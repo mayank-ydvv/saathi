@@ -1,0 +1,10 @@
+{
+  "home_id": "home-demo-1",
+  "status": "red",
+  "reason": "No movement anywhere for 4 hours",
+  "last_seen": {
+    "zone": "living_room",
+    "ts": "2026-10-22T02:00:00Z"
+  },
+  "active_alert_id": "alt_demo_red"
+}

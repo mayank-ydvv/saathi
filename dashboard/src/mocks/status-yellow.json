@@ -1,0 +1,10 @@
+{
+  "home_id": "home-demo-1",
+  "status": "yellow",
+  "reason": "Grace period: checking morning kitchen routine",
+  "last_seen": {
+    "zone": "bedroom",
+    "ts": "2026-10-22T03:05:00Z"
+  },
+  "active_alert_id": "alt_demo_yellow"
+}

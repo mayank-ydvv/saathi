@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #fbfbf9;
+  --color-canvas-card: #ffffff;
+  --color-canvas-subtle: #f4f4f0;
+  --color-border-subtle: #e6e6e0;
+  --color-ink: #191c1e;
+  --color-ink-muted: #575e65;
+  --color-ink-faint: #8a929a;
+
+  --color-status-green-bg: #ecfdf5;
+  --color-status-green-border: #a7f3d0;
+  --color-status-green-text: #065f46;
+  --color-status-green-badge: #10b981;
+
+  --color-status-yellow-bg: #fffbeb;
+  --color-status-yellow-border: #fde68a;
+  --color-status-yellow-text: #92400e;
+  --color-status-yellow-badge: #f59e0b;
+
+  --color-status-red-bg: #fef2f2;
+  --color-status-red-border: #fecaca;
+  --color-status-red-text: #991b1b;
+  --color-status-red-badge: #ef4444;
+
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #0f172a;
+    --color-canvas-card: #1e293b;
+    --color-canvas-subtle: #334155;
+    --color-border-subtle: #334155;
+    --color-ink: #f8fafc;
+    --color-ink-muted: #94a3b8;
+    --color-ink-faint: #64748b;
+
+    --color-status-green-bg: #064e3b;
+    --color-status-green-border: #047857;
+    --color-status-green-text: #ecfdf5;
+    --color-status-green-badge: #34d399;
+
+    --color-status-yellow-bg: #78350f;
+    --color-status-yellow-border: #b45309;
+    --color-status-yellow-text: #fef3c7;
+    --color-status-yellow-badge: #fbbf24;
+
+    --color-status-red-bg: #7f1d1d;
+    --color-status-red-border: #b91c1c;
+    --color-status-red-text: #fee2e2;
+    --color-status-red-badge: #f87171;
+  }
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

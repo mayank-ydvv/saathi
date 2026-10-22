@@ -1,0 +1,10 @@
+{
+  "home_id": "home-demo-1",
+  "status": "green",
+  "reason": null,
+  "last_seen": {
+    "zone": "kitchen",
+    "ts": "2026-10-22T05:48:00Z"
+  },
+  "active_alert_id": null
+}

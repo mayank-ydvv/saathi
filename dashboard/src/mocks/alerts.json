@@ -1,0 +1,36 @@
+{
+  "alerts": [
+    {
+      "alert_id": "alt_demo_red",
+      "home_id": "home-demo-1",
+      "kind": "long_inactivity",
+      "zone": null,
+      "reason": "No movement anywhere for 4 hours",
+      "state": "ALERT_FAMILY",
+      "created_at": "2026-10-22T06:00:00Z",
+      "resolved_at": null,
+      "acked_by": null,
+      "steps": [
+        { "state": "SUSPECT", "at": "2026-10-22T06:00:00Z" },
+        { "state": "NUDGE_PARENT", "at": "2026-10-22T06:05:00Z" },
+        { "state": "ALERT_FAMILY", "at": "2026-10-22T06:10:00Z" }
+      ]
+    },
+    {
+      "alert_id": "alt_demo_resolved",
+      "home_id": "home-demo-1",
+      "kind": "late_start",
+      "zone": "kitchen",
+      "reason": "No kitchen movement by 10:15 (usually 08:05)",
+      "state": "RESOLVED",
+      "created_at": "2026-10-22T04:45:00Z",
+      "resolved_at": "2026-10-22T04:51:00Z",
+      "acked_by": { "by": "family", "name": "Priya" },
+      "steps": [
+        { "state": "SUSPECT", "at": "2026-10-22T04:45:00Z" },
+        { "state": "NUDGE_PARENT", "at": "2026-10-22T04:50:00Z" },
+        { "state": "RESOLVED", "at": "2026-10-22T04:51:00Z" }
+      ]
+    }
+  ]
+}

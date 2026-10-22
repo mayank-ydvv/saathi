@@ -1,0 +1,6 @@
+{
+  "home_id": "home-demo-1",
+  "parent_name": "Kamala",
+  "city": "Chennai",
+  "zones": ["front_door", "kitchen", "living_room", "bedroom"]
+}
