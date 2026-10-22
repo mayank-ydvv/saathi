@@ -1,0 +1,12 @@
+# Runtime dependencies for the Lambda layer (boto3 comes with the Lambda Python runtime).
+# Pinned to the versions the test suite runs against.
+fastapi==0.159.1
+starlette==1.9.0
+pydantic==2.14.1
+pydantic-core==2.50.1
+mangum==0.22.0
+httpx==0.28.1
+anyio==4.15.1
+typing-extensions==4.16.0
+python-dotenv==1.2.4
+ring-sandbox==0.5.0

@@ -48,3 +48,21 @@ jobs:
         if: steps.check.outputs.present == 'true'
         working-directory: ${{ matrix.app }}
         run: npm ci && npm run build
+
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install SAM CLI
+        run: pip install aws-sam-cli
+      - name: Validate template
+        working-directory: infra
+        run: sam validate --lint --region us-east-1
+      - name: Build
+        working-directory: infra
+        run: sam build
+        env:
+          SAM_CLI_TELEMETRY: "0"
