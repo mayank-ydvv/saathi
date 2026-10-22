@@ -1,31 +1,32 @@
-import { useEffect, useState } from "react";
-import { getHome, getStatus } from "./api/client";
-import type { Home, Status } from "./api/types";
-import { config } from "./config";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Layout } from "./components/Layout";
+import { Alerts } from "./screens/Alerts";
+import { Digest } from "./screens/Digest";
+import { Routine } from "./screens/Routine";
+import { Today } from "./screens/Today";
+import { ROUTER_FUTURE } from "./routerFuture";
+import { LiveDataProvider } from "./state/LiveData";
 
-/** Phase 1 placeholder: proves the client and mock data work. The screens arrive in Phase 2. */
-export default function App() {
-  const [home, setHome] = useState<Home | null>(null);
-  const [status, setStatus] = useState<Status | null>(null);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    void getHome({ signal: ctrl.signal }).then((r) => r.ok && setHome(r.data));
-    void getStatus({ signal: ctrl.signal }).then((r) => r.ok && setStatus(r.data));
-    return () => ctrl.abort();
-  }, []);
-
+export function AppRoutes() {
   return (
-    <main className="mx-auto max-w-xl p-6">
-      <h1 className="text-2xl font-semibold">Saathi</h1>
-      <p className="text-muted">
-        {home ? `${home.parent_name} · ${home.city}` : "Loading…"}
-        {config.useMock ? " · mock data" : ""}
-      </p>
-      <p className="mt-4 rounded-2xl bg-surface p-4 shadow-card">
-        Status: {status ? status.status : "…"}
-        {status?.reason ? ` — ${status.reason}` : ""}
-      </p>
-    </main>
+    <LiveDataProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Today />} />
+          <Route path="alerts" element={<Alerts />} />
+          <Route path="digest" element={<Digest />} />
+          <Route path="routine" element={<Routine />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </LiveDataProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter future={ROUTER_FUTURE}>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }

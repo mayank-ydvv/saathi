@@ -25,6 +25,19 @@ Notes written as we build. One section per tool, then the friction log and featu
 - **Onboarding:** minutes.
 - **Build with it again?** Yes.
 
+### React Router 6.30
+- **Used for:** the four tabs (`/`, `/alerts`, `/digest`, `/routine`) with `NavLink` active states.
+- **Worked well:** small API; `MemoryRouter` makes screen tests easy.
+- **Needs work:** every test run printed two "v7 future flag" warnings until we passed `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}` to both `BrowserRouter` and `MemoryRouter`; the warning names the flags but not that tests' routers need them too.
+- **Onboarding:** minutes.
+- **Build with it again?** Yes (or v7 when the team upgrades).
+
+### Testing Library + jsdom (component tests)
+- **Used for:** rendering whole screens on mock data and clicking "I'm checking".
+- **Worked well:** role/name queries (`getByRole("region", { name: "Open alert" })`) double as an accessibility check.
+- **Needs work:** jsdom doesn't implement `HTMLDialogElement.showModal()`, so the visitor panel needs a fallback to the `open` attribute in tests.
+- **Build with it again?** Yes.
+
 ### npm 11
 - **Used for:** installing dependencies.
 - **Needs work:** `npm install` now prints `npm warn allow-scripts esbuild (postinstall …)` and skips esbuild's install script. Vite still works (esbuild's binary comes from its platform package), but the warning doesn't say whether anything is broken. CI uses Node 20 / npm 10, which doesn't have this behaviour, so the two can differ.
@@ -35,6 +48,8 @@ Notes written as we build. One section per tool, then the friction log and featu
 | Task attempted | Steps taken | Where it broke | How we fixed it |
 |---|---|---|---|
 | Film the mock dashboard at any hour | Mock events were anchored to the real clock | Just after midnight the day had no events and the red state read "No kitchen movement by 00:04" | In mock mode the app runs on a story clock (today 16:30 IST, or `?time=HH:MM`) |
+| Share a helper from a component file | Exported `peaks()` next to `RoutineChart` | `react-refresh/only-export-components` warns (Fast Refresh only works for component-only files) | Moved helpers to `src/lib/` |
+| Hour labels on a 375px phone | 00:00 … 24:00 under each lane | Labels overlapped ("00:0006:00") | Show "00 06 12 18 24" below the `sm` breakpoint |
 | Strict lint in tests | Used `!` non-null assertions in tests | `@typescript-eslint/no-non-null-assertion` (strict preset) fails the lint | A tiny `must()` helper in the tests |
 
 ## Feature requests
