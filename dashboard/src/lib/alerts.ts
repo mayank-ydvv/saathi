@@ -7,11 +7,6 @@ export const isOpen = (a: Alert) => a.state !== "RESOLVED";
 export function resolvedSummary(a: Alert): string | null {
   if (a.state !== "RESOLVED" || !a.resolved_at) return null;
   const who = a.acked_by?.name ? `by ${a.acked_by.name} ` : "";
-  return `Resolved ${who}in ${formatDuration(minutesBetween(a.created_at, a.resolved_at))}`;
-}
-
-/** Who acknowledged, in words: "Priya (family)". */
-export function ackedByLabel(a: Alert): string | null {
-  if (!a.acked_by) return null;
-  return `${a.acked_by.name} (${a.acked_by.by})`;
+  const mins = minutesBetween(a.created_at, a.resolved_at);
+  return `Resolved ${who}in ${mins < 1 ? "under a minute" : formatDuration(mins)}`;
 }

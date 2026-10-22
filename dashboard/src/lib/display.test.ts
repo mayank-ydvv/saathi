@@ -91,6 +91,12 @@ describe("alert summary", () => {
     );
   });
 
+  it("says 'under a minute' for demo-speed acks", () => {
+    expect(resolvedSummary({ ...base, resolved_at: "2026-10-22T03:05:30Z" })).toBe(
+      "Resolved by Priya in under a minute",
+    );
+  });
+
   it("is null while the alert is open", () => {
     expect(resolvedSummary({ ...base, state: "ALERT_FAMILY", resolved_at: null })).toBeNull();
   });
