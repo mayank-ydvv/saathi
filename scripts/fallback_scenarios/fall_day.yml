@@ -1,0 +1,9 @@
+# Placeholder until sandbox/scenarios/fall_day.yml lands (Debadrita).
+name: fall_day
+description: Kamala gets up at 06:50, the milkman rings at 07:30, then nothing - no kitchen by 10:20.
+story_start: "06:50"
+check_at: "10:20"
+steps:
+  - { offset_s: 0, type: motion_detected, sub_type: human, device: Bedroom Cam }
+  - { offset_s: 120, type: motion_detected, sub_type: human, device: Bedroom Cam }
+  - { offset_s: 2400, type: motion_detected, sub_type: human, device: Front Door }

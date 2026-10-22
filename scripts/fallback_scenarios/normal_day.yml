@@ -1,0 +1,15 @@
+# Placeholder until sandbox/scenarios/normal_day.yml lands (Debadrita). Plain ring-sandbox
+# scenario format; `story_start` and `check_at` are read only by scripts/demo_driver.py.
+name: normal_day
+description: A calm day for Kamala - wakes, milk at the door, cooks, rests. Dashboard stays green.
+story_start: "06:45"
+check_at: "21:30"
+steps:
+  - { offset_s: 0, type: motion_detected, sub_type: human, device: Bedroom Cam }
+  - { offset_s: 2700, type: motion_detected, sub_type: human, device: Front Door }
+  - { offset_s: 4800, type: motion_detected, sub_type: human, device: Kitchen Cam }
+  - { offset_s: 11700, type: motion_detected, sub_type: human, device: Living Room Cam }
+  - { offset_s: 22500, type: motion_detected, sub_type: human, device: Kitchen Cam }
+  - { offset_s: 33300, type: motion_detected, sub_type: human, device: Living Room Cam }
+  - { offset_s: 45900, type: motion_detected, sub_type: human, device: Kitchen Cam }
+  - { offset_s: 52200, type: motion_detected, sub_type: human, device: Bedroom Cam }
