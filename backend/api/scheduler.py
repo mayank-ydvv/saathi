@@ -87,7 +87,11 @@ class Scheduler:
                 engine.rollover_day(routine, today)
                 self.store.put_routine(engine.routine_to_dict(routine))
                 result.rolled_over += 1
-        for anomaly in engine.check_tick(routines, now, self.cfg):
+        anomalies = engine.check_tick(routines, now, self.cfg)
+        if anomalies:  # check_tick records "fired today" markers on the routines: keep them
+            for routine in routines.values():
+                self.store.put_routine(engine.routine_to_dict(routine))
+        for anomaly in anomalies:
             result.anomalies.append(anomaly)
             alert = open_alert(self.store, anomaly, now)
             if alert is not None:
