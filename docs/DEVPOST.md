@@ -46,7 +46,8 @@ When one of these fires, Saathi doesn't wake the family straight away. It climbs
 
 Any acknowledgement ends it, and every step is logged.
 
-Every evening, Amazon Bedrock writes the family a short **digest** of the day. When the
+Every evening, Amazon Bedrock writes the family a short **digest** of the day, ending with any
+**weekly trend** worth knowing ("Waking about 40 minutes later this week"). When the
 **doorbell** rings, Bedrock describes the visitor from the snapshot, and Saathi flags strangers
 with no uniform and no package, a common pattern in scams that target older people.
 
@@ -109,7 +110,7 @@ in English and हिन्दी.
 
 ## What's next for Saathi
 - A Hindi voice for the nudge (Polly's bilingual voices), and more Indian languages.
-- Weekly trends for the family ("Ma is waking 40 minutes later this week"), an early sign of declining health. The engine already computes them; the next step is showing them in the digest and on the dashboard.
+- Weekly trends on the dashboard too (they already end the evening digest), with a chart of the shift over a month.
 - A real Ring device and the live Partner API once we have access.
 - Per-home tuning of which rooms mean "the day has started".
 
