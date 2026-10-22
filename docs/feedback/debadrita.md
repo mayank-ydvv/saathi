@@ -18,14 +18,29 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 - **Onboarding:** minutes.
 - **Build with it again?** Yes.
 
+### ring-sandbox (as an open-source contributor)
+- **Used for:** our Open Source entry, a pull request adding three elder-care example scenarios to the project.
+- **Worked well:** CONTRIBUTING.md names scenario files as one of the most valuable contributions and gives the exact dev commands. Examples ship inside the wheel and two existing tests cover every file in `examples/` automatically, so adding a scenario needed no test changes. The full suite (92 tests) ran green locally on Windows in about a minute.
+- **Needs work:** the example loader only reads the top level of `examples/`, so a sub-folder such as `examples/elder_care/` would not resolve by name. Nothing says so; we found it in `scenarios.py`. The README still says "Three documented examples" although four shipped before our change.
+- **Onboarding:** clone to green test suite in about 5 minutes.
+- **Build with it again?** Yes.
+
+### Saathi backend demo tooling (our own `demo_driver.py`, `seed_home`)
+- **Used for:** verifying each scenario against the real engine on the demo clock.
+- **Worked well:** one driver plays any scenario file; the `/_dev/clock` and `/_dev/tick` routes make a whole day testable in about two minutes.
+- **Needs work:** `DEMO_CLOCK_START` wants a full ISO timestamp (`HH:MM` crashes the API at startup), and on Windows the backend needs the `tzdata` package for `ZoneInfo`.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |
 |---|---|---|---|
 | Play a scenario at real times of day (06:50 wake-up) | `ring-sandbox play normal_day.yml --speed 600` | Events landed relative to "now" (e.g. 20:11), not 06:50; `play` has no start-time option | Small runner `play_day.py` calling `run(..., start=local_midnight)`; `offset_s` = seconds after local midnight |
-| Use kitchen / living room / bedroom cameras | Named them in `device:` | `KeyError: no device named/id 'Kitchen Cam' in sandbox world` | Runner creates them via `POST /_sandbox/devices` with stable ids before playing |
+| Use kitchen / living room / bedroom cameras | Named them in `device:` | `KeyError: no device named/id 'Kitchen Cam' in sandbox world` | Runner adds missing ones by name via `POST /_sandbox/devices` (same names the backend's seeding uses) |
 | Use Asia/Kolkata on Windows | `ZoneInfo("Asia/Kolkata")` | No IANA tz database on Windows without the `tzdata` package | Fixed UTC+05:30 offset (India has no DST, so it is exact) |
-| Check the scenarios trigger only their intended anomaly | Simulated the contract's rules over 14 learned days | Rare-slot rule also fires on daytime visitors; inactivity counts overnight sleep | Raised with the engine owner instead of bending the scenarios |
+| Check the scenarios trigger only their intended anomaly | Simulated the contract's rules over 14 learned days | Rare-slot rule also fires on daytime visitors; inactivity counts overnight sleep | Raised with the engine owner; the merged engine already limits the night rule to non-waking hours and counts the night only from 06:00 |
+| Make our scenario files work with the team's demo driver | Ran `scripts/demo_driver.py sandbox/scenarios/fall_day.yml` | Driver exits without a `story_start` key; my runner would also have deleted the cameras `seed_home` created | Added `story_start: "00:00"` / `check_at`; runner now only adds missing devices by name |
+| Verify scenarios end to end on Windows | Started the API with `DEMO_CLOCK_START=00:00` | `ValueError: Invalid isoformat string: '00:00'` at startup; later `ZoneInfoNotFoundError` in tests | Passed a full ISO timestamp; installed `tzdata` in the local venv |
+| Contribute scenarios upstream in a sub-folder | Planned `examples/elder_care/*.yml` | `scenarios.examples()` doesn't recurse, so names wouldn't resolve | Put the files flat in `examples/` like the existing ones |
 
 ## Feature requests
 
@@ -35,3 +50,5 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | ring-sandbox: `inject --at <ISO datetime>` | The endpoint already supports `at`; the CLI doesn't expose it | nice-to-have |
 | ring-sandbox: a `devices:` block in scenario YAML that creates missing devices | Scenarios that use their own devices are not self-contained today | important |
 | ring-sandbox: friendly CLI error for an unknown `device:` name | Currently a raw `KeyError` traceback | nice-to-have |
+| ring-sandbox: let `examples()` / `resolve()` find scenarios in sub-folders of `examples/` | Lets themed sets (e.g. elder care) live together without name clashes | nice-to-have |
+| Saathi: accept `HH:MM` for `DEMO_CLOCK_START` and add `tzdata` for Windows developers | Both broke a first local run | nice-to-have |
