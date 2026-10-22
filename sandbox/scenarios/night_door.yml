@@ -1,0 +1,110 @@
+# Saathi scenario for `ring-sandbox play` and sandbox/scenarios/play_day.py.
+#
+# A normal day, plus someone at the front door at 02:10 at night (Kamala
+# wandering out, or an intruder). Expected anomaly: night_activity for the
+# front_door zone (the 02:00-02:15 slot is active on <5% of learned days).
+# offset_s is seconds after LOCAL MIDNIGHT (Asia/Kolkata) with play_day.py.
+
+name: night_door
+description: Normal day plus a person at the front door at 02:10. Triggers night_activity.
+steps:
+  - offset_s: 7800   # 02:10 front door in the middle of the night
+    type: motion_detected
+    sub_type: human
+    device: Front Door
+  - offset_s: 24600   # 06:50 wakes up
+    type: motion_detected
+    sub_type: human
+    device: Bedroom Cam
+  - offset_s: 24900   # 06:55 takes in the milk
+    type: motion_detected
+    sub_type: human
+    device: Front Door
+  - offset_s: 27600   # 07:40 breakfast
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 28800   # 08:00
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 30000   # 08:20
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 31500   # 08:45 living room through the morning
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 34200   # 09:30
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 36900   # 10:15
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 39600   # 11:00
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 42300   # 11:45
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 45900   # 12:45 lunch
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 47100   # 13:05
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 48000   # 13:20
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 54000   # 15:00 afternoon in the living room
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 56700   # 15:45
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 61500   # 17:05 goes out for a walk
+    type: motion_detected
+    sub_type: human
+    device: Front Door
+  - offset_s: 64200   # 17:50 back home
+    type: motion_detected
+    sub_type: human
+    device: Front Door
+  - offset_s: 65700   # 18:15
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 68400   # 19:00
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 71100   # 19:45 dinner
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 72300   # 20:05
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 73200   # 20:20
+    type: motion_detected
+    sub_type: human
+    device: Kitchen Cam
+  - offset_s: 75600   # 21:00
+    type: motion_detected
+    sub_type: human
+    device: Living Room Cam
+  - offset_s: 78600   # 21:50 goes to bed
+    type: motion_detected
+    sub_type: human
+    device: Bedroom Cam
