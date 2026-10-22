@@ -5,19 +5,21 @@ minute). English voice-over, public on YouTube, no copyrighted music.
 
 ## Before recording
 
-Record only after Mayank confirms the end-to-end run. These parts are not verified yet as of
-2026-10-22; each shot below says what to do if one isn't ready.
+Local end-to-end run verified on 2026-10-23 (`fall_day`, real API, both frontends): alert →
+parent nudge → "I'm okay" → RESOLVED by Kamala; dashboard Today/Alerts/Digest/Routine all live.
+Still unverified: the rows marked below; each shot says what to do if one isn't ready.
 
 | Needed for | What | Owner | Status |
 |---|---|---|---|
 | 0:15 family alert | Telegram bot token and family/neighbour chat IDs in `.env` | Mayank | not verified with a real phone yet |
 | 1:05 scam visitor | Bedrock model access (`BEDROCK_MODEL_ID`); without it there's no `caution` flag | Mayank, Krishnaditya | live calls pending AWS access |
 | 1:05 scam visitor | Two test photos: a stranger with no uniform or package, and a uniformed aide | Debadrita | to do |
-| 0:15, 1:35 | Family dashboard showing status, timeline, alerts and the digest | Anushka | `dashboard/` not in `main` yet |
+| 0:15, 1:35 | Family dashboard showing status, timeline, alerts and the digest | Anushka | done; verified against the real API |
 | 1:35 digest | Bedrock digest; otherwise a template sentence is sent | Krishnaditya | template fallback works |
 | 2:00 | `docs/architecture.png` | Debadrita | done |
 
-Already in `main`: the six scenarios, the late-start and demo-clock fixes, and the parent app.
+Already in `main`: the six scenarios, the late-start and demo-clock fixes, the parent app and the
+dashboard.
 
 ## Setup
 
