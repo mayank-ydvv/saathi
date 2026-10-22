@@ -1,8 +1,9 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { config } from "../config";
 import { useNow } from "../hooks/useNow";
 import { formatDateIST, formatTimeIST } from "../lib/time";
 import { useLive } from "../state/LiveData";
+import { DemoSwitch } from "./DemoSwitch";
 import { FamilyName } from "./FamilyName";
 import { Icon, type IconName } from "./Icon";
 
@@ -14,9 +15,10 @@ const TABS: { to: string; label: string; icon: IconName }[] = [
 ];
 
 function Tab({ to, label, icon, compact }: (typeof TABS)[number] & { compact?: boolean }) {
+  const { search } = useLocation(); // keep ?mock= / ?time= when switching tabs
   return (
     <NavLink
-      to={{ pathname: to, search: window.location.search }}
+      to={{ pathname: to, search }}
       end={to === "/"}
       className={({ isActive }) =>
         [
@@ -59,7 +61,7 @@ export function Layout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-line bg-canvas/90 backdrop-blur">
-          <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 md:px-8">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 md:px-8">
             <div className="md:hidden">
               <Wordmark />
             </div>
@@ -69,7 +71,12 @@ export function Layout() {
               </p>
               <p className="hidden text-sm text-muted sm:block">{formatDateIST(now)}</p>
             </div>
-            <div className="ml-auto text-right">
+            {config.useMock ? (
+              <div className="order-last w-full md:order-none md:ml-auto md:w-auto">
+                <DemoSwitch />
+              </div>
+            ) : null}
+            <div className="ml-auto text-right md:ml-0">
               <time
                 dateTime={now.toISOString()}
                 className="block text-lg font-semibold tabular-nums"

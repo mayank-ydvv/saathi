@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- provider + its hook belong together */
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { getAlerts, getHome, getStatus } from "../api/client";
 import type { Alert, Home, Status } from "../api/types";
 import { POLL_STATUS_MS } from "../config";
+import { useMockVariant } from "../hooks/useMockVariant";
 import { type Polled, usePolling } from "../hooks/usePolling";
 import { startServerClockSync } from "../lib/clock";
 
@@ -24,6 +25,10 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const alerts = usePolling((signal) => getAlerts(20, { signal }), POLL_STATUS_MS);
   const refreshStatus = status.refresh;
   const refreshAlerts = alerts.refresh;
+  useOnChange(useMockVariant()[0], () => {
+    refreshStatus();
+    refreshAlerts();
+  });
   const value = useMemo(
     () => ({
       home,
@@ -37,6 +42,20 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     [home, status, alerts, refreshStatus, refreshAlerts],
   );
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
+}
+
+/** Run `effect` when `value` changes (not on mount). */
+export function useOnChange<T>(value: T, effect: () => void): void {
+  const first = useRef(true);
+  const latest = useRef(effect);
+  latest.current = effect;
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    latest.current();
+  }, [value]);
 }
 
 export function useLive(): LiveData {

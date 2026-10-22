@@ -12,7 +12,8 @@ import { useTitle } from "../hooks/useTitle";
 import { usePolling } from "../hooks/usePolling";
 import { isOpen } from "../lib/alerts";
 import { todayIST } from "../lib/time";
-import { activeAlert, useLive } from "../state/LiveData";
+import { useMockVariant } from "../hooks/useMockVariant";
+import { activeAlert, useLive, useOnChange } from "../state/LiveData";
 
 export function Today() {
   useTitle("Today");
@@ -21,6 +22,7 @@ export function Today() {
   const today = todayIST(now);
   const timeline = usePolling((signal) => getTimeline(today, { signal }), POLL_TIMELINE_MS, today);
   const [visitor, setVisitor] = useState<TimelineEvent | null>(null);
+  useOnChange(useMockVariant()[0], timeline.refresh);
   const parentName = home.data?.parent_name;
   const open = activeAlert(status.data, alerts.data?.alerts);
 
