@@ -23,7 +23,7 @@ import { formatTimeIST, todayIST, toIsoZ } from "../lib/time";
 import { openAlert, resolvedLateStart, resolvedNightDoor } from "./alerts";
 import { eventsFor } from "./day";
 import { digest, routine } from "./insights";
-import { mockVariant } from "./variant";
+import { activeMockVariant } from "./variant";
 
 const HOME: Home = {
   home_id: "home-demo-1",
@@ -150,9 +150,9 @@ export function createMockBackend(
 
 let instance: { variant: StatusColour; backend: MockBackend } | null = null;
 
-/** The page's mock backend; rebuilt when `?mock=` changes. */
+/** The page's mock backend; rebuilt when the variant (switch or `?mock=`) changes. */
 export function mockBackend(): MockBackend {
-  const variant = mockVariant();
+  const variant = activeMockVariant();
   if (!instance || instance.variant !== variant) {
     instance = { variant, backend: createMockBackend(variant) };
   }

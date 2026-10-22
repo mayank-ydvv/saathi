@@ -25,16 +25,18 @@ export function StatusCard({ status, now }: { status: Status; now: Date }) {
           {status.reason ? <p className="mt-2 text-lg leading-snug">{status.reason}</p> : null}
         </div>
       </div>
-      <p className="mt-5 flex items-center gap-2 text-[15px] opacity-90">
-        <span className={`inline-block h-2.5 w-2.5 rounded-full ${look.dot}`} aria-hidden="true" />
-        {seen ? (
-          <>
-            Last seen: <strong className="font-semibold">{zoneLabel(seen.zone)}</strong> ·{" "}
-            {timeAgo(seen.ts, now)}
-          </>
-        ) : (
-          "No activity recorded yet today"
-        )}
+      <p className="mt-5 flex items-baseline gap-2 text-[15px] opacity-90">
+        <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${look.dot}`} aria-hidden="true" />
+        <span>
+          {seen ? (
+            <>
+              Last seen: <strong className="font-semibold">{zoneLabel(seen.zone)}</strong> ·{" "}
+              {timeAgo(seen.ts, now)}
+            </>
+          ) : (
+            "No activity recorded yet today"
+          )}
+        </span>
       </p>
     </section>
   );

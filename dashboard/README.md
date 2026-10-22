@@ -42,6 +42,10 @@ Status and alerts refresh every 5 s and the timeline every 30 s, only while the 
 The mock day is Kamala's in Chennai: 61 events over four zones, two doorbell visitors (one
 flagged), a resolved late start with every escalation step, and an open alert.
 
+In mock mode the top bar has a **Demo** switch (**Normal · Checking · Alert**) that changes the
+status on the spot for filming; it writes the choice to the URL (`?mock=…`), so the same state
+can be reopened or shared. The switch is hidden when `VITE_USE_MOCK=false`.
+
 | URL | Shows |
 |---|---|
 | `/?mock=green` | All normal |
@@ -61,7 +65,7 @@ Mock data, light, laptop (1024 px): [Today · red](docs/screenshots/today-red-la
 
 Phone (375 px): [Today · red](docs/screenshots/today-red-phone.jpg) ·
 [Caution visitor](docs/screenshots/visitor-caution-phone.jpg) · dark: [Today · red](docs/screenshots/today-red-phone-dark.jpg),
-[Routine](docs/screenshots/routine-phone-dark.jpg)
+[Routine](docs/screenshots/routine-phone-dark.jpg), [Demo switch](docs/screenshots/demo-switch-phone-dark.jpg)
 
 Real backend (`fall_day`, dark): [yellow](docs/screenshots/real-api-yellow-dark.jpg) →
 [red](docs/screenshots/real-api-red-dark.jpg) → [after I'm checking](docs/screenshots/real-api-after-ack-dark.jpg) ·

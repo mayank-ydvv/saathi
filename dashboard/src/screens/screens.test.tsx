@@ -49,6 +49,22 @@ describe("screens with mock data", () => {
     expect(screen.queryByRole("region", { name: "Open alert" })).not.toBeInTheDocument();
   });
 
+  it("the demo switch changes the status in place and keeps it across tabs", async () => {
+    renderAt("/?mock=green");
+    expect(await screen.findByRole("heading", { name: "All normal" })).toBeInTheDocument();
+    const demo = screen.getByRole("group", { name: "Demo status" });
+    expect(within(demo).getByRole("button", { name: "Normal" })).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(within(demo).getByRole("button", { name: "Alert" }));
+    expect(await screen.findByRole("heading", { name: "Needs attention" })).toBeInTheDocument();
+    expect(within(demo).getByRole("button", { name: "Alert" })).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(within(demo).getByRole("button", { name: "Checking" }));
+    expect(await screen.findByRole("heading", { name: "Checking in" })).toBeInTheDocument();
+    const alertsTab = screen.getAllByRole("link", { name: /Alerts/ })[0];
+    expect(alertsTab).toHaveAttribute("href", "/alerts?mock=yellow");
+  });
+
   it("Today: green has no alert banner and draws the four zone lanes", async () => {
     renderAt("/?mock=green");
     expect(await screen.findByRole("heading", { name: "All normal" })).toBeInTheDocument();
