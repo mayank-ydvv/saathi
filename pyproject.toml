@@ -47,3 +47,4 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "--import-mode=importlib"
 asyncio_mode = "auto"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
