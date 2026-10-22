@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/*
+ * Calm palette: warm neutrals, one teal accent, and three status colours. Text colours are
+ * chosen for at least 4.5:1 contrast on their backgrounds in both schemes (WCAG AA).
+ */
+:root {
+  --canvas: #f6f5f1;
+  --surface: #ffffff;
+  --surface-2: #efede7;
+  --ink: #1d2327;
+  --muted: #545e66;
+  --line: #e2dfd7;
+  --accent: #0f6f68;
+  --accent-ink: #ffffff;
+  --ok-bg: #e6f3ea;
+  --ok-ink: #155232;
+  --ok-dot: #2f8a55;
+  --warn-bg: #fcf1d6;
+  --warn-ink: #6f4400;
+  --warn-dot: #c98a12;
+  --bad-bg: #fbe5e2;
+  --bad-ink: #8b1d14;
+  --bad-dot: #cf3b2b;
+  --shadow: 0 1px 2px rgb(20 24 27 / 0.05), 0 4px 16px rgb(20 24 27 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #14181b;
+    --surface: #1d2327;
+    --surface-2: #262d32;
+    --ink: #eef1f2;
+    --muted: #a9b4bb;
+    --line: #313a40;
+    --accent: #5ec4b8;
+    --accent-ink: #0b2724;
+    --ok-bg: #16301f;
+    --ok-ink: #a7e3bd;
+    --ok-dot: #4fbf7e;
+    --warn-bg: #36290c;
+    --warn-ink: #f6d58e;
+    --warn-dot: #e3a72f;
+    --bad-bg: #3b1916;
+    --bad-ink: #ffb9ae;
+    --bad-dot: #f06a58;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-ink: var(--ok-ink);
+  --color-ok-dot: var(--ok-dot);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-dot: var(--warn-dot);
+  --color-bad-bg: var(--bad-bg);
+  --color-bad-ink: var(--bad-ink);
+  --color-bad-dot: var(--bad-dot);
+  --shadow-card: var(--shadow);
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Noto Sans", sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
