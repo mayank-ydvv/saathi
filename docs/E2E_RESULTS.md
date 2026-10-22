@@ -1,77 +1,66 @@
 # End-to-end results
 
-Run on 2026-10-22 on a MacBook (Python 3.11, ring-sandbox 0.5.0, `STORAGE=memory`, no AWS
-credentials, no Telegram token, so alerts went to the log channel). Each run was
-`scripts/demo_run.sh <scenario>`: a real `ring-sandbox serve` emulator, real `uvicorn
-backend.api.main:app`, seeding through `RingClient`, the emulator signing and delivering every
-webhook, and the engine **stub** (Krishnaditya's engine and Bedrock digest are not merged yet).
-Scenarios are the placeholders in `scripts/fallback_scenarios/` (Debadrita's aren't merged yet).
+Latest run: 2026-10-22, 22:40 IST, on a MacBook (Python 3.11, ring-sandbox 0.5.0, `STORAGE=memory`,
+no AWS credentials, no Telegram token, so alerts went to the log channel).
 
-## fall_day: late start → full ladder → ack
+Each run was `TICK_SECONDS=1 scripts/demo_run.sh <scenario> --speed 1200 --exit`: a real
+`ring-sandbox serve` emulator, real `uvicorn backend.api.main:app`, seeding through `RingClient`,
+Krishnaditya's real engine, digest and 14-day fixtures (`sandbox/fixtures/`), Debadrita's scenarios
+(`sandbox/scenarios/`), and the emulator signing and delivering every webhook. Ticking every second
+(instead of every 60 s) is deliberate: it gives the scheduler a chance to fire between every pair of
+events, so timing-dependent false alerts show up.
 
-```
-06:50  motion_detected/human    Bedroom Cam      stored
-06:52  motion_detected/human    Bedroom Cam      stored
-07:30  motion_detected/human    Front Door       stored
-10:20  scheduler tick -> late_start kitchen "No kitchen movement by 10:20 (usually 08:05)"
-```
-
-| Step | Demo-clock time (UTC) | Gap | Observed |
+| Scenario | Alert raised | Status after | Matches `sandbox/scenarios/README.md` |
 |---|---|---|---|
-| SUSPECT | 04:50:00 | – | status `yellow` |
-| NUDGE_PARENT | 04:50:10 | 10 s | `/nudge` active: "Good morning Kamala, are you okay? Please press the green button.", `audio_url` → `/blobs/audio/nudge-fallback.m4a` (200, audio/mp4, 46,722 B) |
-| ALERT_FAMILY | 04:50:25 | 15 s | status `red`; family message: "Family alert for Kamala (Chennai) / No kitchen movement by 10:20 (usually 08:05) / Last seen: front door at 07:30" |
-| ALERT_NEIGHBOUR | 04:50:45 | 20 s | neighbour message, same text |
-| RESOLVED | 04:50:53 | – | `POST /alerts/{id}/ack {"by":"family","name":"Priya"}` → 200 in **1 ms**; second ack → 200 `RESOLVED`, first acker kept; status back to `green`, `/nudge` inactive |
+| `normal_day` | none (22:00 tick: no anomalies) | green | yes |
+| `fall_day` | `long_inactivity`: "No movement anywhere for 4 h 5 min (last: living room at 13:00)" | yellow → ladder | yes |
+| `late_morning` | `late_start` kitchen: "No kitchen movement by 08:50 (usually 07:50)" | red, full ladder | yes |
+| `night_door` | `night_activity`: "Front door opened at 02:10 — unusual for this hour" | red, full ladder | yes |
+| `scam_visitor` | none from the routine checks | green | yes |
+| `aide_visit` | none | green | yes |
 
-Same run, ingest checks against the live API:
-- Three identical signed deliveries → `200, 200, 200`; events went 3 → 4 (**stored once**).
-- Wrong HMAC → `401 {"detail": "invalid webhook signature"}`; no signature → `401`.
-- Every endpoint in contract 4.6 answered with its documented shape (digest → `404` before 21:00, as specified).
+## Two bugs earlier runs missed
 
-## night_door: rare-slot door activity
+The first version of this file (all green) was recorded with the engine stub and 60-second ticks.
+Running with the real engine and 1-second ticks exposed two problems, both now fixed:
 
-```
-02:10  motion_detected/human    Front Door       stored
-02:10  motion_detected/human    Front Door       stored
-```
-A `night_activity` alert ("Front door opened at 02:10") opened on the webhook itself (no tick
-needed); the second door event 40 s later did **not** open a second alert. Ladder:
-SUSPECT 20:40:00 → NUDGE_PARENT 20:40:09 → ALERT_FAMILY 20:40:26 (UTC), status `red`.
+1. **Late start fired for every zone** (engine, fixed in #15). With the fixtures' usual front-door
+   time of 06:28, a normal day raised "No front door movement by 07:30" and, because only one alert is
+   open per home, that false alert hid the real kitchen alert in `fall_day`. Late start now only
+   checks the kitchen and bedroom.
+2. **A real-clock tick before the demo clock was set** (`scripts/demo_run.sh`). The scheduler could
+   tick on the real time (e.g. 22:28) between seeding and the driver's first clock move, see "nothing
+   today" and open "No bedroom movement by 22:28" for the rest of the demo. Reproduced in every
+   scenario before the fix; `demo_run.sh` now sets the demo clock to `story_start` before seeding.
 
-## scam_visitor: doorbell snapshot + visitor description
+## Escalation ladder and ack (from the earlier `fall_day` run)
 
-Normal morning (06:45 bedroom, 07:30 door, 08:05 kitchen, 10:00 living room), then at 11:30 a
-person, a doorbell press and a person again. The `ding` event in the timeline has a
-`snapshot_url` (fetched via `RingClient.snapshot_latest`, stored, served: 200 `image/png`) and a
-`visitor` object. Status stayed `green` (no false alert from the morning).
-- The visitor text is the stub's placeholder until the Bedrock `describe_visitor` lands.
-- The emulator's snapshot is a 179-byte placeholder PNG. For the video, run the emulator with
-  `--media-dir` and real test images (per the risk table in the plan).
+| Step | Gap | Observed |
+|---|---|---|
+| SUSPECT → NUDGE_PARENT | 10 s | `/nudge` active with the message and an `audio_url` (fallback clip, 200 audio/mp4) |
+| → ALERT_FAMILY | 15 s | status `red`; family message with the reason and "Last seen: front door at 07:30" |
+| → ALERT_NEIGHBOUR | 20 s | neighbour message |
+| ack | – | `POST /alerts/{id}/ack` → 200 in 1 ms; second ack returns the same `RESOLVED`; status back to `green` |
 
-## normal_day: calm day + evening digest
-
-Eight events from 06:45 to 21:15 at 1200× (about 45 s of real time). No anomalies at any tick;
-status `green` throughout. The 21:30 tick wrote the digest (template fallback, no Bedrock):
-"Kamala's day on 22 Oct: first activity at 06:45, last at 21:15. Activity seen in the bedroom,
-front door, kitchen, living room (8 events)."
+Ingest checks against the live API: three identical signed deliveries → stored once; wrong HMAC →
+`401 {"detail": "invalid webhook signature"}`; no signature → `401`.
 
 ## Acceptance criteria
 
 | Criterion | Status |
 |---|---|
-| `fall_day` → SUSPECT → NUDGE_PARENT (nudge active with audio URL) → family message; ack resolves within 2 s | **Pass** locally (ack 1 ms). The family message went to the log channel: a **real Telegram message is not verified yet** (needs the bot token and chat IDs). Telegram payloads and button handling are covered by unit tests. |
+| Alert → NUDGE_PARENT (nudge with audio URL) → family message; ack resolves within 2 s | **Pass** locally. A **real Telegram message is not verified yet** (needs the bot token and chat IDs); Telegram payloads and button handling are unit-tested. |
 | Every 4.6 endpoint returns the documented shape | **Pass** (`tests/backend/test_api.py` + live curl) |
-| Duplicate webhooks never create duplicate events/alerts; bad HMAC → 401 | **Pass** (tests + live) |
+| Duplicate webhooks never duplicate events/alerts; bad HMAC → 401 | **Pass** (tests + live) |
 | No `Scan` anywhere | **Pass**: the only "Scan" in `backend/` is `ScanIndexForward=False` (Query sort order); IAM grants no `dynamodb:Scan` |
-| `pytest` and `ruff` pass; runs with `STORAGE=memory` and no AWS credentials | **Pass**: 124 tests; Polly and Bedrock fall back |
+| `pytest` and `ruff` pass; runs with `STORAGE=memory` and no AWS credentials | **Pass**; Polly and Bedrock fall back |
 | `sam build` succeeds; deployed API answers `/health` | `sam build` + `sam validate --lint` **pass**; **not deployed yet** (needs AWS credentials and approval) |
-| `ring_client.py` used on the real code path | **Pass**: seeding (`list_devices`) and doorbell snapshots (`latest_snapshot`) in every run |
+| `ring_client.py` used on the real code path | **Pass**: seeding (`list_devices`) and doorbell snapshots (`latest_snapshot`) |
 
 ## How to reproduce
 
 ```bash
 source .venv/bin/activate
-scripts/demo_run.sh fall_day          # leaves the stack running for the dashboard; Ctrl-C stops it
-scripts/demo_run.sh normal_day --speed 1200 --exit
+TICK_SECONDS=1 scripts/demo_run.sh fall_day --speed 1200 --exit
+scripts/demo_run.sh fall_day      # leaves the stack running for the dashboard; Ctrl-C stops it
 ```

@@ -46,7 +46,7 @@ exclude = ["*.md"]
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "sandbox/scenarios"]
 pythonpath = ["."]
 addopts = "--import-mode=importlib"
 asyncio_mode = "auto"
