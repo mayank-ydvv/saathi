@@ -29,10 +29,16 @@ export function Stat({ icon: IconCmp, label, children, foot }: { icon: LucideIco
  * Four stat cards for Today: events so far (Magic UI number ticker), rooms with activity (shadcn
  * radial chart), when the day started, and doorbell rings. O(events) to summarise.
  */
+/** Engine activity types (backend ENGINE_EVENT_TYPES): package/vehicle aren't the parent. */
+const ACTIVITY_TYPES = new Set(["motion.human", "motion", "ding"]);
+
 export function TodayStats({ events, zones }: { events: TimelineEvent[]; zones: readonly string[] }) {
-  const active = new Set(events.map((e) => e.zone));
+  // Only signs of the parent being about count (packages and vehicles don't), and only rooms
+  // the home has, so the ring can never read "4/1" or go past a full circle (L6).
+  const activity = events.filter((e) => ACTIVITY_TYPES.has(e.type));
+  const active = new Set(activity.map((e) => e.zone).filter((z) => zones.includes(z)));
   const total = Math.max(zones.length, 1);
-  const first = events[0];
+  const first = activity[0];
   const rings = events.filter((e) => e.type === "ding");
   const flagged = rings.filter((e) => e.visitor?.caution).length;
   const data = [{ name: "rooms", rooms: active.size, fill: "var(--color-rooms)" }];
@@ -40,7 +46,7 @@ export function TodayStats({ events, zones }: { events: TimelineEvent[]; zones: 
   return (
     <section aria-label="Today at a glance" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <Stat icon={Activity} label="Events today" foot="Motion and doorbell, all rooms">
-        <NumberTicker value={events.length} className="display text-[44px] leading-none font-semibold" />
+        <NumberTicker value={activity.length} className="display text-[44px] leading-none font-semibold" />
       </Stat>
       <Stat icon={DoorOpen} label="Rooms active">
         <ChartContainer

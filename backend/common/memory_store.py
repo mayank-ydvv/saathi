@@ -33,6 +33,8 @@ class MemoryStore:
         self._alerts: dict[str, Record] = {}  # alert_id -> alert
         self._homes: dict[str, Record] = {}
         self._blobs: dict[str, tuple[bytes, str]] = {}
+        self._open: dict[str, str] = {}  # home -> open alert id (H10)
+        self._digest_claims: set[tuple[str, str]] = set()  # (home, day) (H5)
 
     # events --------------------------------------------------------------
     def put_event_if_new(self, event: Record) -> bool:
@@ -68,9 +70,16 @@ class MemoryStore:
             r = self._routines[home_id].get(zone)
             return copy.deepcopy(r) if r is not None else None
 
-    def put_routine(self, routine: Record) -> None:
+    def put_routine(self, routine: Record, expected_rev: int | None = None) -> bool:
+        """Write and bump `rev`. With `expected_rev`, only if nobody wrote since (H9). O(1)."""
         with self._lock:
-            self._routines[routine["home_id"]][routine["zone"]] = copy.deepcopy(routine)
+            zones = self._routines[routine["home_id"]]
+            current = zones.get(routine["zone"])
+            current_rev = int((current or {}).get("rev", 0))
+            if expected_rev is not None and current_rev != expected_rev:
+                return False
+            zones[routine["zone"]] = {**copy.deepcopy(routine), "rev": current_rev + 1}
+            return True
 
     def get_routines(self, home_id: str) -> dict[str, Record]:
         """O(zones)."""
@@ -106,9 +115,30 @@ class MemoryStore:
             return [copy.deepcopy(self._alerts[i]) for i in reversed(ids)]
 
     def get_open_alert(self, home_id: str) -> Record | None:
-        """O(1): only one alert is open per home and it is always the newest."""
-        newest = self.list_alerts(home_id, 1)
-        return newest[0] if newest and newest[0]["state"] != "RESOLVED" else None
+        """O(1): follows the home's open-alert pointer (not "newest id", see H3). Alerts
+        written without a pointer (older data, tests) fall back to "the newest, if open"."""
+        with self._lock:
+            alert_id = self._open.get(home_id)
+            if alert_id is None:
+                newest = self.list_alerts(home_id, 1)
+                return newest[0] if newest and newest[0]["state"] != "RESOLVED" else None
+            alert = self._alerts.get(alert_id)
+            if alert is None or alert["state"] == "RESOLVED":
+                return None
+            return copy.deepcopy(alert)
+
+    def claim_open_alert(self, home_id: str, alert_id: str) -> bool:
+        """Atomically make `alert_id` the home's open alert; False if another is open. O(1)."""
+        with self._lock:
+            if self.get_open_alert(home_id) is not None:
+                return False
+            self._open[home_id] = alert_id
+            return True
+
+    def release_open_alert(self, home_id: str, alert_id: str) -> None:
+        with self._lock:
+            if self._open.get(home_id) == alert_id:
+                del self._open[home_id]
 
     # homes ---------------------------------------------------------------
     def get_home(self, home_id: str) -> Record | None:
@@ -131,6 +161,20 @@ class MemoryStore:
     def get_digest(self, home_id: str, day: date) -> Record | None:
         blob = self.get_blob(digest_blob_key(home_id, day))
         return json.loads(blob[0]) if blob else None
+
+    def claim_digest(self, home_id: str, day: date) -> bool:
+        """True for exactly one caller per home and day (H5). O(1)."""
+        with self._lock:
+            key = (home_id, day.isoformat())
+            if key in self._digest_claims:
+                return False
+            self._digest_claims.add(key)
+            return True
+
+    def release_digest(self, home_id: str, day: date) -> None:
+        """Undo a claim whose digest failed, so a later tick can retry (H4)."""
+        with self._lock:
+            self._digest_claims.discard((home_id, day.isoformat()))
 
     # blobs ---------------------------------------------------------------
     def save_blob(self, key: str, data: bytes, content_type: str) -> str:

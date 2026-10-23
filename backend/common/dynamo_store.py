@@ -3,7 +3,10 @@
 - saathi-events  : PK home_id, SK ts = "<ISO ts>#<event_id>"; conditional put = idempotent.
 - saathi-routine : PK pk = "<home_id>#<zone>"; BatchGetItem over the known zones.
 - saathi-alerts  : PK home_id, SK alert_id (time-sortable), newest-first Query with Limit.
-- saathi-homes   : PK home_id.
+- saathi-homes   : PK home_id. Also holds small marker items next to each home:
+                   "<home>#open-alert" (H10) and "<home>#digest#<day>" (H5).
+- Event idempotency (H6): an "id#<event_id>" item in saathi-events, written in the same
+  transaction as the event, so a redelivery dedups even if its (demo-shifted) ts differs.
 Digests, snapshots and audio live in S3 and are served through presigned URLs.
 Only GetItem / PutItem / UpdateItem / Query / BatchGetItem are used: never Scan.
 """
@@ -56,6 +59,28 @@ def _plain(value: Any) -> Any:
     return value
 
 
+def _dynamo_safe(value: Any) -> Any:
+    """Floats aren't allowed by the serializer: send them as Decimal, recursively."""
+    if isinstance(value, float):
+        return Decimal(str(value))
+    if isinstance(value, dict):
+        return {k: _dynamo_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_dynamo_safe(v) for v in value]
+    return value
+
+
+def _cancelled_by_condition(exc: ClientError) -> bool:
+    if exc.response.get("Error", {}).get("Code") != "TransactionCanceledException":
+        return False
+    reasons = exc.response.get("CancellationReasons") or []
+    return not reasons or any(r.get("Code") == "ConditionalCheckFailed" for r in reasons)
+
+
+def _conditional_failed(exc: ClientError) -> bool:
+    return exc.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException"
+
+
 def _is_missing(exc: ClientError) -> bool:
     return exc.response.get("Error", {}).get("Code") in {"NoSuchKey", "404", "NotFound"}
 
@@ -73,16 +98,25 @@ class DynamoStore:
 
     # events --------------------------------------------------------------
     def put_event_if_new(self, event: Record) -> bool:
-        """One conditional PutItem: O(1). Same event_id => same key => rejected."""
+        """One transaction of two conditional puts: O(1). The "id#<event_id>" marker makes
+        the dedupe depend on event_id alone, not on the (demo-shifted) ts (H6)."""
+        table = self._settings.table("events")
         item = {**event, "ts": event_sort_key(event)}
+        marker = {"home_id": event["home_id"], "ts": f"id#{event['event_id']}"}
+        cond = {
+            "ConditionExpression": "attribute_not_exists(#sk)",
+            "ExpressionAttributeNames": {"#sk": "ts"},
+        }
         try:
-            self._events.put_item(
-                Item=item,
-                ConditionExpression="attribute_not_exists(#sk)",
-                ExpressionAttributeNames={"#sk": "ts"},
+            # The resource's client serialises plain Python values itself (Decimal for floats).
+            self._ddb.meta.client.transact_write_items(
+                TransactItems=[
+                    {"Put": {"TableName": table, "Item": _dynamo_safe(marker), **cond}},
+                    {"Put": {"TableName": table, "Item": _dynamo_safe(item), **cond}},
+                ]
             )
         except ClientError as exc:
-            if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            if _cancelled_by_condition(exc):
                 return False
             raise
         return True
@@ -121,8 +155,30 @@ class DynamoStore:
         item = self._routine.get_item(Key={"pk": f"{home_id}#{zone}"}).get("Item")
         return self._routine_out(item) if item else None
 
-    def put_routine(self, routine: Record) -> None:
-        self._routine.put_item(Item={**routine, "pk": f"{routine['home_id']}#{routine['zone']}"})
+    def put_routine(self, routine: Record, expected_rev: int | None = None) -> bool:
+        """PutItem that bumps `rev`; with `expected_rev`, conditional on nobody writing since
+        (H9: ingest and the tick both read-modify-write routines). O(1)."""
+        rev = int(routine.get("rev", 0)) if expected_rev is None else expected_rev
+        item = {**routine, "pk": f"{routine['home_id']}#{routine['zone']}", "rev": rev + 1}
+        if expected_rev is None:
+            self._routine.put_item(Item=item)
+            return True
+        condition = (  # rev 0 = never written, or written before routines had a rev
+            "attribute_not_exists(pk) OR attribute_not_exists(rev) OR rev = :rev"
+            if expected_rev == 0
+            else "rev = :rev"
+        )
+        try:
+            self._routine.put_item(
+                Item=item,
+                ConditionExpression=condition,
+                ExpressionAttributeValues={":rev": expected_rev},
+            )
+        except ClientError as exc:
+            if _conditional_failed(exc):
+                return False
+            raise
+        return True
 
     def get_routines(self, home_id: str) -> dict[str, Record]:
         """One BatchGetItem over the contract zones: O(zones)."""
@@ -186,9 +242,52 @@ class DynamoStore:
         return [_plain(i) for i in resp.get("Items", [])]
 
     def get_open_alert(self, home_id: str) -> Record | None:
-        """O(1): the open alert, if any, is always the newest one."""
-        newest = self.list_alerts(home_id, 1)
-        return newest[0] if newest and newest[0]["state"] != "RESOLVED" else None
+        """O(1): follows the home's open-alert pointer (H3/H10); older data without a
+        pointer falls back to "the newest, if open"."""
+        pointer = self._pointer(home_id)
+        if not pointer:
+            newest = self.list_alerts(home_id, 1)
+            return newest[0] if newest and newest[0]["state"] != "RESOLVED" else None
+        alert = self.get_alert(home_id, pointer)
+        return alert if alert is not None and alert["state"] != "RESOLVED" else None
+
+    def _pointer(self, home_id: str) -> str:
+        item = self._homes.get_item(Key={"home_id": f"{home_id}#open-alert"}).get("Item")
+        return str(item["alert_id"]) if item else ""
+
+    def claim_open_alert(self, home_id: str, alert_id: str) -> bool:
+        """Conditional put of the pointer, so only one alert opens per home (H10). O(1)."""
+        if self.get_open_alert(home_id) is not None:
+            return False
+        old = self._pointer(home_id)
+        try:
+            if old:
+                self._homes.put_item(
+                    Item={"home_id": f"{home_id}#open-alert", "alert_id": alert_id},
+                    ConditionExpression="alert_id = :old",
+                    ExpressionAttributeValues={":old": old},
+                )
+            else:
+                self._homes.put_item(
+                    Item={"home_id": f"{home_id}#open-alert", "alert_id": alert_id},
+                    ConditionExpression="attribute_not_exists(home_id)",
+                )
+        except ClientError as exc:
+            if _conditional_failed(exc):
+                return False
+            raise
+        return True
+
+    def release_open_alert(self, home_id: str, alert_id: str) -> None:
+        try:
+            self._homes.delete_item(
+                Key={"home_id": f"{home_id}#open-alert"},
+                ConditionExpression="alert_id = :id",
+                ExpressionAttributeValues={":id": alert_id},
+            )
+        except ClientError as exc:
+            if not _conditional_failed(exc):  # a newer alert's pointer: leave it alone
+                raise
 
     # homes ---------------------------------------------------------------
     def get_home(self, home_id: str) -> Record | None:
@@ -209,6 +308,24 @@ class DynamoStore:
     def get_digest(self, home_id: str, day: date) -> Record | None:
         blob = self.get_blob(digest_blob_key(home_id, day))
         return json.loads(blob[0]) if blob else None
+
+    def claim_digest(self, home_id: str, day: date) -> bool:
+        """Conditional put of a per-day marker, so the 21:00 Lambda and the tick can't both
+        send the digest (H5). O(1)."""
+        try:
+            self._homes.put_item(
+                Item={"home_id": f"{home_id}#digest#{day.isoformat()}"},
+                ConditionExpression="attribute_not_exists(home_id)",
+            )
+        except ClientError as exc:
+            if _conditional_failed(exc):
+                return False
+            raise
+        return True
+
+    def release_digest(self, home_id: str, day: date) -> None:
+        """Undo a claim whose digest failed, so a later tick can retry (H4)."""
+        self._homes.delete_item(Key={"home_id": f"{home_id}#digest#{day.isoformat()}"})
 
     # blobs ---------------------------------------------------------------
     def save_blob(self, key: str, data: bytes, content_type: str) -> str:

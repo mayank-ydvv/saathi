@@ -74,12 +74,47 @@ def test_routines_by_zone(store):
     r = {"home_id": HOME, "zone": "kitchen", "hist": [0] * 96, "days_seen": 3, "median_first": 485}
     store.put_routine(r)
     store.put_routine({**r, "zone": "bedroom", "days_seen": 4})
-    assert store.get_routine(HOME, "kitchen") == r
+    assert store.get_routine(HOME, "kitchen") == {**r, "rev": 1}
     assert store.get_routine(HOME, "living_room") is None
     routines = store.get_routines(HOME)
     assert set(routines) == {"kitchen", "bedroom"}
     assert routines["bedroom"]["days_seen"] == 4
     assert isinstance(routines["kitchen"]["hist"][0], int)
+
+
+def test_routine_writes_are_conditional_on_rev(store):
+    """H9: a write based on a stale read is rejected instead of silently winning."""
+    r = {"home_id": HOME, "zone": "kitchen", "hist": [0] * 96, "days_seen": 3}
+    assert store.put_routine(r, expected_rev=0) is True
+    stored = store.get_routine(HOME, "kitchen")
+    assert stored["rev"] == 1
+    assert store.put_routine({**r, "days_seen": 4}, expected_rev=1) is True
+    assert store.put_routine({**r, "days_seen": 5}, expected_rev=1) is False  # stale
+    assert store.get_routine(HOME, "kitchen")["days_seen"] == 4
+
+
+def test_redelivered_event_with_a_shifted_ts_is_still_a_duplicate(store):
+    """H6: dedupe is on event_id alone, not on ts#event_id."""
+    assert store.put_event_if_new(_event(7, 0)) is True
+    assert store.put_event_if_new(_event(7, 30)) is False
+
+
+def test_open_alert_pointer_and_digest_claims(store):
+    """H10/H5: only one open alert per home and one digest per day, atomically."""
+    store.put_home({"home_id": HOME})
+    assert store.claim_open_alert(HOME, "alt_a") is True
+    store.put_alert(_alert("alt_a"))
+    assert store.claim_open_alert(HOME, "alt_b") is False
+    assert store.get_open_alert(HOME)["alert_id"] == "alt_a"
+    store.put_alert({**_alert("alt_a"), "state": "RESOLVED"})
+    store.release_open_alert(HOME, "alt_a")
+    assert store.get_open_alert(HOME) is None
+    assert store.claim_open_alert(HOME, "alt_b") is True
+    day = date(2026, 10, 22)
+    assert store.claim_digest(HOME, day) is True
+    assert store.claim_digest(HOME, day) is False
+    store.release_digest(HOME, day)
+    assert store.claim_digest(HOME, day) is True
 
 
 def _alert(alert_id: str, state: str = "SUSPECT") -> dict:

@@ -41,29 +41,50 @@ export function now(): Date {
   return new Date(storyStart + (Date.now() - loadedAt));
 }
 
-/** One sync: true if the backend has a demo clock. Uses the midpoint of the round trip. */
-export async function syncServerClock(signal?: AbortSignal): Promise<boolean> {
+export type SyncResult = "synced" | "absent" | "error";
+
+/**
+ * One sync. "absent" when the backend has no demo clock (404, e.g. production), "error" when
+ * it couldn't be reached. Uses the midpoint of the round trip.
+ */
+export async function syncServerClock(signal?: AbortSignal): Promise<SyncResult> {
   const sent = Date.now();
   try {
     const resp = await fetch(`${config.apiBase}/_dev/clock`, { signal });
-    if (!resp.ok) return false;
+    if (resp.status === 404) return "absent";
+    if (!resp.ok) return "error";
     const body = (await resp.json()) as { now?: unknown };
     const server = typeof body.now === "string" ? Date.parse(body.now) : NaN;
-    if (Number.isNaN(server)) return false;
+    if (Number.isNaN(server)) return "error";
     setOffset(server - (sent + Date.now()) / 2);
-    return true;
+    return "synced";
   } catch {
-    return false;
+    return "error";
   }
 }
 
-/** Real mode only: follow the backend's demo clock while it exists. Returns a stop function. */
+const RETRY_MIN_MS = 2_000;
+const RETRY_MAX_MS = 60_000;
+
+/**
+ * Real mode only: follow the backend's demo clock while it exists. A failed sync (backend
+ * still starting) is retried with back-off; only a 404 stops it (M7). Returns a stop function.
+ */
 export function startServerClockSync(): () => void {
   if (config.useMock) return () => undefined;
   const ctrl = new AbortController();
   let timer: number | undefined;
+  let retry = RETRY_MIN_MS;
   const tick = async () => {
-    if (await syncServerClock(ctrl.signal)) timer = window.setTimeout(tick, SYNC_EVERY_MS);
+    const result = await syncServerClock(ctrl.signal);
+    if (ctrl.signal.aborted || result === "absent") return;
+    if (result === "synced") {
+      retry = RETRY_MIN_MS;
+      timer = window.setTimeout(tick, SYNC_EVERY_MS);
+    } else {
+      timer = window.setTimeout(tick, retry);
+      retry = Math.min(retry * 2, RETRY_MAX_MS);
+    }
   };
   void tick();
   return () => {

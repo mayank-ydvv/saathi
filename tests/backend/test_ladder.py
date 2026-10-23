@@ -36,6 +36,10 @@ class FakeVoice:
         self.texts.append(text)
         return "http://localhost:8000/blobs/audio/x.mp3"
 
+    def ensure(self, text):
+        self.texts.append(text)
+        return "audio/x.mp3"
+
 
 @pytest.fixture
 def parts(store):

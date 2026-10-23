@@ -3,6 +3,7 @@
  * of throwing, so screens can show friendly loading / empty / error states. With
  * VITE_USE_MOCK=true the same functions answer from `src/mocks/` with a small delay.
  */
+import { authHeader, signOutAfterRejection } from "../auth/session";
 import { config, MOCK_DELAY_MS } from "../config";
 import { mockBackend } from "../mocks/backend";
 import type {
@@ -45,13 +46,16 @@ async function detail(resp: Response): Promise<string> {
   return `HTTP ${resp.status}`;
 }
 
-/** fetch → Result. 404 is its own kind so screens can show an empty state. */
+/**
+ * fetch → Result. 404 is its own kind so screens can show an empty state. Every call carries
+ * the signed-in family member's id token (C1), renewed first if it is about to expire (M9).
+ */
 async function request<T>(path: string, init: RequestInit = {}): Promise<Result<T>> {
   let resp: Response;
   try {
     resp = await fetch(`${config.apiBase}${path}`, {
       ...init,
-      headers: { Accept: "application/json", ...init.headers },
+      headers: { Accept: "application/json", ...(await authHeader()), ...init.headers },
     });
   } catch (err) {
     if (init.signal?.aborted) return aborted();
@@ -61,10 +65,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<Result<
     };
   }
   if (!resp.ok) {
+    if (resp.status === 401) signOutAfterRejection(); // the API no longer accepts this login
     const kind: ApiErrorKind = resp.status === 404 ? "not_found" : "http";
     return { ok: false, error: { kind, status: resp.status, message: await detail(resp) } };
   }
-  return { ok: true, data: (await resp.json()) as T };
+  try {
+    return { ok: true, data: (await resp.json()) as T };
+  } catch {
+    // e.g. a 200 with an HTML error page from a proxy (M8): an error, not a crash
+    return { ok: false, error: { kind: "http", status: resp.status, message: "unexpected response" } };
+  }
 }
 
 /** Mock answer after MOCK_DELAY_MS, honouring cancellation like a real request would. */

@@ -4,12 +4,11 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { AppRoutes } from "../App";
 import { StatusCard } from "../components/StatusCard";
-import { ROUTER_FUTURE } from "../routerFuture";
 
 function renderAt(path: string) {
   window.history.replaceState(null, "", path); // the mock reads ?mock= from the page URL
   return render(
-    <MemoryRouter initialEntries={[path]} future={ROUTER_FUTURE}>
+    <MemoryRouter initialEntries={[path]}>
       <AppRoutes />
     </MemoryRouter>,
   );

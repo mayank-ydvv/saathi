@@ -32,6 +32,8 @@ cd "$ROOT"
 [[ -f .venv/bin/activate ]] && source .venv/bin/activate
 
 export STORAGE=memory DEMO_MODE=true
+# The API refuses to start without a webhook key; .env (from .env.example) normally sets one.
+export RING_WEBHOOK_HMAC_KEY="${RING_WEBHOOK_HMAC_KEY:-$(python -c 'from backend.common.config import get_settings; print(get_settings().ring_webhook_hmac_key or "local-demo-key")')}"
 export RING_API_BASE="${RING_API_BASE:-http://localhost:8787}"
 API="${PUBLIC_BASE_URL:-http://localhost:8000}"
 API_PORT="${API##*:}"

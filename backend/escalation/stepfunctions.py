@@ -35,12 +35,19 @@ def execution_input(alert: dict[str, Any], waits: dict[str, int]) -> dict[str, A
     }
 
 
+EXPECTED_TOKEN_ERRORS = frozenset({"TaskTimedOut", "TaskDoesNotExist", "InvalidToken"})
+
+
 def _send_success(sfn: Any, token: str, output: dict[str, Any]) -> bool:
     try:
         sfn.send_task_success(taskToken=token, output=json.dumps(output))
         return True
-    except ClientError as exc:  # TaskTimedOut / InvalidToken: that step already moved on
-        log.info("SendTaskSuccess ignored: %s", exc.response.get("Error", {}).get("Code"))
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code")
+        if code in EXPECTED_TOKEN_ERRORS:  # that step already moved on: harmless
+            log.info("SendTaskSuccess ignored: %s", code)
+        else:  # e.g. AccessDenied (C5): the execution keeps waiting out its timeout
+            log.error("SendTaskSuccess failed (%s): the ladder execution is NOT stopped", code)
         return False
 
 

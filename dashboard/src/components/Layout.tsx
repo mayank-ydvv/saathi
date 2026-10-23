@@ -137,7 +137,7 @@ export function Layout() {
               <time
                 dateTime={now.toISOString()}
                 className="display block text-xl font-semibold tabular-nums"
-                aria-label={`Time in Chennai ${formatTimeIST(now)}`}
+                aria-label={`Time in ${parent?.city || "India"} ${formatTimeIST(now)}`}
               >
                 {formatTimeIST(now)}
               </time>

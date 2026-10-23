@@ -17,9 +17,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.api import dev, routes
+from backend.api.auth import Auth
 from backend.api.scheduler import Scheduler
 from backend.common import clock
-from backend.common.config import Settings, get_settings
+from backend.common.config import Settings, check_settings, get_settings
 from backend.common.store import Store, make_store
 from backend.common.timeutil import parse_iso
 from backend.escalation.base import Escalator
@@ -32,13 +33,6 @@ from backend.ingest.service import IngestService
 
 log = logging.getLogger(__name__)
 
-CORS_ORIGINS = [
-    "http://localhost:5173",  # dashboard
-    "http://localhost:5174",  # parent app
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-]
-
 
 def create_app(
     settings: Settings | None = None,
@@ -49,11 +43,15 @@ def create_app(
 ) -> FastAPI:
     """Build the app. Tests inject a store/ring/escalator and turn background loops off."""
     settings = settings or get_settings()
+    check_settings(settings)
     store = store or make_store(settings)
     ring = ring if ring is not None else RingGateway.from_settings(settings)
     esc = build_escalation(settings, store)
     escalator = escalator or esc.escalator
-    if settings.demo_clock_start:
+    # The demo clock lives in this process only (H8), so it is a local (STORAGE=memory)
+    # feature: on AWS the ingest/tick/step Lambdas would disagree on "now".
+    local_demo = settings.demo_mode and settings.storage == "memory"
+    if settings.demo_clock_start and local_demo:
         clock.set_start(parse_iso(settings.demo_clock_start))
 
     @contextlib.asynccontextmanager
@@ -80,14 +78,17 @@ def create_app(
     app.state.store = store
     app.state.ring = ring
     app.state.escalator = escalator
-    app.state.ingest = IngestService(store, settings, ring=ring, escalate=escalator.start)
+    app.state.auth = Auth(settings)
+    app.state.ingest = IngestService(
+        store, settings, ring=ring, escalate=escalator.start, resolve=escalator.ack
+    )
     app.state.scheduler = Scheduler(store, settings, escalator, on_digest=esc.notifier.digest)
     app.state.voice = esc.voice
     app.state.notifier = esc.notifier
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
+        allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )
@@ -106,7 +107,7 @@ def create_app(
         app.include_router(webhook_router(settings.telegram_webhook_secret, lambda: esc.telegram))
     if settings.storage == "memory":
         app.include_router(dev.blobs)
-    if settings.demo_mode:
+    if local_demo:  # never on the deployed (DynamoDB) API (C3)
         app.include_router(dev.router)
     return app
 

@@ -29,8 +29,9 @@ class Store(Protocol):
     # routines ------------------------------------------------------------
     def get_routine(self, home_id: str, zone: str) -> Record | None: ...
 
-    def put_routine(self, routine: Record) -> None:
-        """`routine` is `routine_to_dict` output; it carries home_id and zone."""
+    def put_routine(self, routine: Record, expected_rev: int | None = None) -> bool:
+        """`routine` is `routine_to_dict` output (home_id, zone; reads add `rev`). Each write
+        bumps `rev`; with `expected_rev` it only writes if nobody wrote since. True if written."""
 
     def get_routines(self, home_id: str) -> dict[str, Record]:
         """zone -> routine dict for every zone that has one."""
@@ -51,6 +52,12 @@ class Store(Protocol):
     def get_open_alert(self, home_id: str) -> Record | None:
         """The home's unresolved alert, if any (at most one is open per home)."""
 
+    def claim_open_alert(self, home_id: str, alert_id: str) -> bool:
+        """Atomically record `alert_id` as the home's open alert. False if one is open."""
+
+    def release_open_alert(self, home_id: str, alert_id: str) -> None:
+        """Clear the home's open-alert pointer if it still points at `alert_id`."""
+
     # homes ---------------------------------------------------------------
     def get_home(self, home_id: str) -> Record | None: ...
 
@@ -60,6 +67,11 @@ class Store(Protocol):
     def put_digest(self, home_id: str, day: date, text: str, generated_at: str) -> Record: ...
 
     def get_digest(self, home_id: str, day: date) -> Record | None: ...
+
+    def claim_digest(self, home_id: str, day: date) -> bool:
+        """True for exactly one caller per home and day."""
+
+    def release_digest(self, home_id: str, day: date) -> None: ...
 
     # blobs (snapshots, audio) -----------------------------------------------
     def save_blob(self, key: str, data: bytes, content_type: str) -> str:

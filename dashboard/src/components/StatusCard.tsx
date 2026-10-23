@@ -79,7 +79,7 @@ export function StatusCard({
                   Last seen: <strong className="font-bold">{zoneLabel(seen.zone)}</strong> · {timeAgo(seen.ts, now)}
                 </>
               ) : (
-                "No activity recorded yet today"
+                "No activity recorded yet"
               )}
             </span>
           </p>

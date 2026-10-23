@@ -1,4 +1,5 @@
-"""Developer/demo routes (mounted only when DEMO_MODE=true) and the memory blob server.
+"""Developer/demo routes (mounted only when DEMO_MODE=true with STORAGE=memory) and the
+memory blob server.
 
 They exist because STORAGE=memory keeps all data inside the API process: seeding, moving
 the demo clock and forcing a tick have to happen in here. None of them are in contract 4.6.
@@ -21,10 +22,6 @@ router = APIRouter(prefix="/_dev", tags=["dev"])
 blobs = APIRouter(tags=["dev"])
 
 
-class SeedIn(BaseModel):
-    routines_file: str | None = None
-
-
 class ClockIn(BaseModel):
     local: str | None = Field(default=None, pattern=r"^\d{2}:\d{2}$", description="HH:MM IST")
     day: date | None = None
@@ -41,12 +38,13 @@ def _clock_state() -> dict[str, Any]:
 
 
 @router.post("/seed")
-def seed(body: SeedIn, request: Request) -> dict[str, Any]:
+def seed(request: Request) -> dict[str, Any]:
+    """Seed from the configured fixtures file only; the path never comes from the request (C4)."""
     state = request.app.state
     if state.ring is None:
         raise HTTPException(status_code=503, detail="Ring client not configured")
     home = seed_home(state.store, state.ring, state.settings)
-    loaded = load_routines(state.store, body.routines_file or state.settings.routines_file)
+    loaded = load_routines(state.store, state.settings.routines_file, home["home_id"])
     return {"home": home, "routines_loaded": loaded}
 
 

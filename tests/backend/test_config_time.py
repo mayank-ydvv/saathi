@@ -18,8 +18,23 @@ def test_settings_defaults_and_demo_waits():
     s = load_settings({})
     assert s.storage == "memory"
     assert s.home_ids == ["home-demo-1"]
-    assert s.waits == DEMO_WAITS
+    assert s.demo_mode is False  # opt-in (C3)
+    assert s.waits == {"SUSPECT": 300, "NUDGE_PARENT": 300, "ALERT_FAMILY": 600}
+    assert load_settings({"DEMO_MODE": "true"}).waits == DEMO_WAITS
     assert s.table("events") == "saathi-events"
+
+
+def test_unsafe_settings_refuse_to_start():
+    """M11: no webhook key, no start; AUTH_MODE=cognito needs the pool and client ids."""
+    import pytest
+
+    from backend.common.config import check_settings
+
+    with pytest.raises(RuntimeError, match="RING_WEBHOOK_HMAC_KEY"):
+        check_settings(load_settings({}))
+    with pytest.raises(RuntimeError, match="COGNITO"):
+        check_settings(load_settings({"RING_WEBHOOK_HMAC_KEY": "k", "AUTH_MODE": "cognito"}))
+    check_settings(load_settings({"RING_WEBHOOK_HMAC_KEY": "k"}))
 
 
 def test_settings_production_waits_from_env():

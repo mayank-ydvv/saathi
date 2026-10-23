@@ -88,6 +88,9 @@ def handle_update(update: dict[str, Any], ack: AckFn, client: TelegramClient | N
     return True
 
 
+MAX_TRIES = 3
+
+
 class TelegramPoller:
     """Local mode: long-poll getUpdates so a button press acks within a second or two."""
 
@@ -95,15 +98,25 @@ class TelegramPoller:
         self._client = client
         self._ack = ack
         self._offset: int | None = None
+        self._failures: dict[int, int] = {}
 
     def poll_once(self) -> int:
+        """Handle new updates in order. The offset only moves past an update once it was
+        handled (M10), so a press whose ack failed (e.g. a store error) is retried on the next
+        poll; after MAX_TRIES it is skipped so one broken update can't block the queue."""
         updates = self._client.get_updates(self._offset)
         for update in updates:
-            self._offset = update["update_id"] + 1
+            update_id = update["update_id"]
             try:
                 handle_update(update, self._ack, self._client)
             except Exception:
-                log.exception("bad Telegram update %s", update.get("update_id"))
+                tries = self._failures.get(update_id, 0) + 1
+                self._failures[update_id] = tries
+                log.exception("Telegram update %s failed (try %d)", update_id, tries)
+                if tries < MAX_TRIES:
+                    break  # leave the offset here: Telegram sends it again next poll
+            self._failures.pop(update_id, None)
+            self._offset = update_id + 1
         return len(updates)
 
     async def run_forever(self) -> None:

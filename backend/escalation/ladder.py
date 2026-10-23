@@ -78,8 +78,13 @@ class LadderCore:
         home = self.store.get_home(alert["home_id"]) or {"home_id": alert["home_id"]}
         state = alert["state"]
         try:
-            if state == "NUDGE_PARENT" and self.voice is not None:
-                self.voice.audio_url(nudge_text(home.get("parent_name", ""), self._now()))
+            if state == "NUDGE_PARENT":
+                # Make the clip once here and remember it on the alert, so /nudge reuses it
+                # instead of asking Polly again (L1).
+                message = nudge_text(home.get("parent_name", ""), self._now())
+                key = self.voice.ensure(message) if self.voice is not None else None
+                alert = {**alert, "nudge_message": message, "audio_key": key}
+                self.store.put_alert(alert, expected_state="NUDGE_PARENT")
             elif state in ("ALERT_FAMILY", "ALERT_NEIGHBOUR"):
                 audience = "family" if state == "ALERT_FAMILY" else "neighbour"
                 seen = last_seen(self.store.get_routines(alert["home_id"]))
