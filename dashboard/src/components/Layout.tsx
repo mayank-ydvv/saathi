@@ -147,14 +147,14 @@ function AccountRow() {
 
 function Wordmark() {
   return (
-    // Same mark as the landing page nav: three-petal outline + lowercase "saathi".
-    <p className="flex items-center gap-2 text-ink">
+    // Same mark as the landing page nav: three-petal outline + lowercase "saathi", linking back to it.
+    <a href={config.landingUrl} className="flex items-center gap-2 text-ink" aria-label="Saathi home page">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
         {[0, 60, 120].map((r) => (
           <ellipse key={r} cx="12" cy="12" rx="4" ry="10" transform={`rotate(${r} 12 12)`} />
         ))}
       </svg>
       <span className="flare text-[24px] leading-none">saathi</span>
-    </p>
+    </a>
   );
 }

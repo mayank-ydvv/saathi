@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Phone } from "../components/Phone";
+import { PARENT_APP_URL } from "../config";
 import { SectionHeading } from "../components/Reveal";
 import { useInView, useTyping } from "../lib/motion";
 import { img, ma } from "../photos";
@@ -60,6 +61,14 @@ export function Nudge() {
             </div>
           </div>
         </Phone>
+      </div>
+      <div className="mt-10 text-center">
+        <a
+          href={PARENT_APP_URL}
+          className="inline-flex h-10 items-center rounded-[6px] border border-deep-ink bg-white px-[18px] text-body text-deep-ink"
+        >
+          Open Ma’s app →
+        </a>
       </div>
     </section>
   );

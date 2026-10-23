@@ -141,4 +141,9 @@ describe("login gate", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Wrong email or password.");
   });
+
+  it("links the saathi mark back to the landing page", () => {
+    renderAt("/login");
+    expect(screen.getByRole("link", { name: "Saathi home page" })).toHaveAttribute("href", "http://localhost:5175");
+  });
 });
