@@ -16,4 +16,5 @@ export function writeSetting(key: string, value: string): void {
 }
 
 export const LANG_KEY = "saathi.lang";
+/** No longer written (M6); kept so older tablets' stored value can be cleared. */
 export const SOUND_KEY = "saathi.soundOn";

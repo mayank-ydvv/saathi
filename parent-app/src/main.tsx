@@ -7,7 +7,7 @@ import "./index.css";
 
 const api = config.useMock
   ? createMockApi(MOCK_NUDGE_AFTER_MS)
-  : createHttpApi(config.apiBase, config.homeId);
+  : createHttpApi(config.apiBase, config.homeId, fetch, config.deviceToken);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html is missing #root");
