@@ -111,3 +111,15 @@ describe("Notification prompt on Today", () => {
     expect(screen.queryByRole("note", { name: "Notification prompt" })).not.toBeInTheDocument();
   });
 });
+
+describe("Current page for screen readers", () => {
+  it("nav links announce the current page with aria-current", () => {
+    renderAt("/alerts?mock=green");
+    for (const link of screen.getAllByRole("link", { name: "Alerts" })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+    for (const link of screen.getAllByRole("link", { name: "Today" })) {
+      expect(link).not.toHaveAttribute("aria-current");
+    }
+  });
+});

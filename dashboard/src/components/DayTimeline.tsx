@@ -3,6 +3,8 @@ import type { TimelineEvent } from "../api/types";
 import { eventTypeLabel, zoneLabel } from "../lib/labels";
 import { dayPercent, groupIntoLanes, isVisitorEvent, ZONE_ORDER } from "../lib/timeline";
 import { formatTimeIST } from "../lib/time";
+import type { RovingHandles } from "../hooks/useRovingTabIndex";
+import { useRovingTabIndex } from "../hooks/useRovingTabIndex";
 import { Icon } from "./Icon";
 
 const HOURS = [0, 6, 12, 18, 24];
@@ -80,6 +82,7 @@ function Lane({
   onPick: (e: TimelineEvent) => void;
   onVisitor: (e: TimelineEvent) => void;
 }) {
+  const roving = useRovingTabIndex(events.length);
   return (
     <>
       <p className="self-center text-[15px] font-medium">
@@ -101,8 +104,8 @@ function Lane({
             aria-hidden="true"
           />
         ))}
-        {events.map((e) => (
-          <Mark key={e.event_id} event={e} onPick={onPick} onVisitor={onVisitor} />
+        {events.map((e, index) => (
+          <Mark key={e.event_id} event={e} roving={roving[index]} onPick={onPick} onVisitor={onVisitor} />
         ))}
         {nowPct !== null ? (
           <span
@@ -118,10 +121,12 @@ function Lane({
 
 function Mark({
   event,
+  roving,
   onPick,
   onVisitor,
 }: {
   event: TimelineEvent;
+  roving?: RovingHandles;
   onPick: (e: TimelineEvent) => void;
   onVisitor: (e: TimelineEvent) => void;
 }) {
@@ -134,10 +139,16 @@ function Mark({
     return (
       <button
         type="button"
+        ref={roving?.ref}
+        tabIndex={roving?.tabIndex}
         aria-label={label}
         title={label}
         onMouseEnter={() => onPick(event)}
-        onFocus={() => onPick(event)}
+        onFocus={() => {
+          roving?.onFocus();
+          onPick(event);
+        }}
+        onKeyDown={(e) => roving?.onKeyDown(e)}
         onClick={() => onVisitor(event)}
         className={`absolute top-1/2 z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-surface shadow ${caution ? "bg-bad-dot text-white" : "bg-accent text-accent-ink"}`}
         style={{ left }}
@@ -150,10 +161,16 @@ function Mark({
   return (
     <button
       type="button"
+      ref={roving?.ref}
+      tabIndex={roving?.tabIndex}
       aria-label={label}
       title={label}
       onMouseEnter={() => onPick(event)}
-      onFocus={() => onPick(event)}
+      onFocus={() => {
+        roving?.onFocus();
+        onPick(event);
+      }}
+      onKeyDown={(e) => roving?.onKeyDown(e)}
       onClick={() => onPick(event)}
       className="absolute top-1/2 h-6 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/80 hover:scale-y-125 hover:bg-accent focus-visible:bg-accent"
       style={{ left }}

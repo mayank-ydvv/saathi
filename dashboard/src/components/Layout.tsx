@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useMatch } from "react-router-dom";
 import { config } from "../config";
 import { useNow } from "../hooks/useNow";
 import { formatDateIST, formatTimeIST } from "../lib/time";
@@ -17,11 +17,13 @@ const TABS: { to: string; label: string; icon: IconName }[] = [
 ];
 
 function Tab({ to, label, icon, compact }: (typeof TABS)[number] & { compact?: boolean }) {
+  const isActive = !!useMatch({ path: to, end: to === "/" });
   return (
     <NavLink
       to={{ pathname: to, search: window.location.search }}
       end={to === "/"}
-      className={({ isActive }) =>
+      aria-current={isActive ? "page" : undefined}
+      className={() =>
         [
           "flex items-center rounded-xl font-medium transition-colors",
           compact ? "flex-1 flex-col gap-0.5 px-1 py-2 text-xs" : "gap-3 px-3 py-2.5 text-[15px]",

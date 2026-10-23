@@ -14,13 +14,52 @@ export function VisitorPanel({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog || !event) return;
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    let untrap: (() => void) | undefined;
+
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      // Focus-trap fallback for browsers without showModal(): non-modal dialog, so Tab is
+      // wrapped manually between the first and last focusable elements, Escape closes.
+      dialog.setAttribute("open", "");
+      dialog.focus();
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onCloseRef.current();
+          return;
+        }
+        if (e.key !== "Tab") return;
+        const focusable = dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!first || !last) return;
+        const active = document.activeElement;
+        if (!dialog.contains(active)) {
+          (e.shiftKey ? last : first).focus();
+          e.preventDefault();
+        } else if (e.shiftKey && active === first) {
+          last.focus();
+          e.preventDefault();
+        } else if (!e.shiftKey && active === last) {
+          first.focus();
+          e.preventDefault();
+        }
+      };
+      dialog.addEventListener("keydown", onKey);
+      untrap = () => dialog.removeEventListener("keydown", onKey);
+    }
+
     return () => {
+      untrap?.();
       if (typeof dialog.close === "function") dialog.close();
       else dialog.removeAttribute("open");
     };
@@ -33,6 +72,7 @@ export function VisitorPanel({
   return (
     <dialog
       ref={ref}
+      tabIndex={-1}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       aria-labelledby="visitor-title"
