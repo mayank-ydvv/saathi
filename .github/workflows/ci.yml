@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [dashboard, parent-app]
+        app: [dashboard, parent-app, landing]
     steps:
       - uses: actions/checkout@v4
       - name: Check for package.json
@@ -44,10 +44,22 @@ jobs:
         if: steps.check.outputs.present == 'true'
         with:
           node-version: "20"
+      - name: Install
+        if: steps.check.outputs.present == 'true'
+        working-directory: ${{ matrix.app }}
+        run: npm ci
+      - name: Lint
+        if: steps.check.outputs.present == 'true'
+        working-directory: ${{ matrix.app }}
+        run: npm run lint
+      - name: Test
+        if: steps.check.outputs.present == 'true'
+        working-directory: ${{ matrix.app }}
+        run: npm run test
       - name: Build
         if: steps.check.outputs.present == 'true'
         working-directory: ${{ matrix.app }}
-        run: npm ci && npm run build
+        run: npm run build
 
   infra:
     runs-on: ubuntu-latest

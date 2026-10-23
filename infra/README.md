@@ -42,6 +42,18 @@ curl "$(aws cloudformation describe-stacks --stack-name saathi \
 # {"ok":true}
 ```
 
+## Family login (Cognito)
+
+The stack also creates the `saathi-family` Cognito user pool. Cognito emails the verification
+and password-reset codes itself (default sender, `no-reply@verificationemail.com`; Cognito's
+default email allows about 50 emails a day, plenty for the hackathon). Point the dashboard at it:
+
+```bash
+aws cloudformation describe-stacks --stack-name saathi \
+  --query "Stacks[0].Outputs[?OutputKey=='CognitoRegion' || OutputKey=='FamilyUserPoolClientId']"
+# put them in dashboard/.env as VITE_COGNITO_REGION and VITE_COGNITO_CLIENT_ID
+```
+
 ## Seed the home
 
 Seeding writes straight to DynamoDB from your laptop, using the Ring device list:

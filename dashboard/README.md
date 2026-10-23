@@ -3,8 +3,44 @@
 The web app a son or daughter opens to see whether their parent is okay today: status, the
 day's timeline, alerts and how they were resolved, the evening digest, and the usual routine.
 
+| Page | What it shows |
+|---|---|
+| **Today** | A status card in the status colour with the parent's photo, the open alert and **I'm checking** inside it, four stat cards, a room-coloured timeline (hover a mark for a tooltip), the latest events and today's doorbell rings |
+| **Alerts** | Totals, open count and average response time; All / Open / Resolved filters; alerts grouped by day with the escalation steps left to right |
+| **Visitors** | Every doorbell ring and parcel for a chosen day, with the snapshot and description; strangers are flagged |
+| **Digest** | The evening digest as a letter, with **Listen** (the browser reads it aloud) and **Copy**, and the last seven days to jump between |
+| **Routine** | Plain-language highlights (usually up by, busiest hour, most-used room), a rooms × hours heatmap and each room's 24-hour chart |
+| **Family** | Who each step of the ladder reaches, by name, and the name sent with "I'm checking" |
+
+Every page ends in a short, collapsible "What does this mean?" note. While an alert is open, phones
+keep an **I'm checking** bar pinned above the tabs, and a toast confirms the acknowledgement.
+When the home has the parent's number (`PARENT_PHONE` when seeding, see docs/BACKEND.md), a
+**Call** button appears on the status card, in the sidebar and on the Family page.
+
 React 18 + Vite + TypeScript (strict) + Tailwind CSS 4 + React Router, tested with Vitest.
-No chart, date or state libraries: charts are plain SVG, times use `Intl` in Asia/Kolkata.
+The look is the landing page's warm almanac palette with real hierarchy: Fraunces for headings,
+Alegreya Sans for text, soft shadows on cards, and one colour per room.
+Times use `Intl` in Asia/Kolkata. The per-room routine bars are plain SVG; the stat cards and the
+"typical day" chart use Recharts through a trimmed shadcn/ui chart wrapper, and the animations
+are Magic UI / Aceternity components ported into `src/components/ui/` (each file names its source).
+
+## Family login
+
+Everything except the login screens sits behind a login. Family members sign up with their name,
+email and a password (8+ characters with a lowercase letter and a number), type the 6-digit
+code from the verification email, and then log in. "Forgot password?" emails a reset code. The
+logged-in name is the one sent with "I'm checking", and the session survives a refresh (tokens
+are renewed with the refresh token).
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VITE_COGNITO_REGION` | empty | AWS region of the user pool (stack output `CognitoRegion`) |
+| `VITE_COGNITO_CLIENT_ID` | empty | App client id (stack output `FamilyUserPoolClientId`) |
+
+With both set, the screens call **Amazon Cognito** directly (`src/auth/cognito.ts`), and Cognito
+sends the verification and reset emails. With them empty you get **demo sign-in**: accounts live
+in this browser's localStorage, the code is shown on screen instead of emailed, and the login
+card says so.
 
 ## Run it
 
@@ -42,6 +78,10 @@ Status and alerts refresh every 5 s and the timeline every 30 s, only while the 
 The mock day is Kamala's in Chennai: 61 events over four zones, two doorbell visitors (one
 flagged), a resolved late start with every escalation step, and an open alert.
 
+In mock mode the top bar has a **Demo** switch (**Normal · Checking · Alert**) that changes the
+status on the spot for filming; it writes the choice to the URL (`?mock=…`), so the same state
+can be reopened or shared. The switch is hidden when `VITE_USE_MOCK=false`.
+
 | URL | Shows |
 |---|---|
 | `/?mock=green` | All normal |
@@ -61,7 +101,7 @@ Mock data, light, laptop (1024 px): [Today · red](docs/screenshots/today-red-la
 
 Phone (375 px): [Today · red](docs/screenshots/today-red-phone.jpg) ·
 [Caution visitor](docs/screenshots/visitor-caution-phone.jpg) · dark: [Today · red](docs/screenshots/today-red-phone-dark.jpg),
-[Routine](docs/screenshots/routine-phone-dark.jpg)
+[Routine](docs/screenshots/routine-phone-dark.jpg), [Demo switch](docs/screenshots/demo-switch-phone-dark.jpg)
 
 Real backend (`fall_day`, dark): [yellow](docs/screenshots/real-api-yellow-dark.jpg) →
 [red](docs/screenshots/real-api-red-dark.jpg) → [after I'm checking](docs/screenshots/real-api-after-ack-dark.jpg) ·

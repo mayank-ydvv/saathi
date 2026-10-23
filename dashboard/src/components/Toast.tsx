@@ -25,7 +25,7 @@ export function Toast({
       role="status"
       aria-live="polite"
       aria-hidden={!visible}
-      className={`fixed inset-x-0 bottom-24 z-30 mx-auto w-fit rounded-full bg-ink px-4 py-2 text-sm font-medium text-canvas shadow-lg transition-all duration-300 md:bottom-10 ${
+      className={`fixed inset-x-0 bottom-44 z-30 mx-auto w-fit rounded-full bg-ink px-4 py-2 text-sm font-medium text-canvas shadow-lg transition-all duration-300 md:bottom-10 ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
       }`}
     >

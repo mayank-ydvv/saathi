@@ -3,6 +3,8 @@ export const config = {
   apiBase: (import.meta.env.VITE_API_BASE ?? "http://localhost:8000").replace(/\/$/, ""),
   homeId: import.meta.env.VITE_HOME_ID ?? "home-demo-1",
   useMock: (import.meta.env.VITE_USE_MOCK ?? "true") === "true",
+  /** The public landing page; the saathi wordmark links back to it. */
+  landingUrl: import.meta.env.VITE_LANDING_URL ?? "http://localhost:5175",
 };
 
 /** Polling intervals (ms). */

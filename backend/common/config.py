@@ -75,6 +75,7 @@ class Settings:
     routines_file: str = "sandbox/fixtures/routines_home-demo-1.json"
     family_name: str = "Priya"
     neighbour_name: str = "Ravi"
+    parent_phone: str = ""
 
     @property
     def waits(self) -> dict[str, int]:
@@ -127,6 +128,7 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
         routines_file=env.get("ROUTINES_FILE", d.routines_file),
         family_name=env.get("FAMILY_NAME", d.family_name),
         neighbour_name=env.get("NEIGHBOUR_NAME", d.neighbour_name),
+        parent_phone=env.get("PARENT_PHONE", "").strip(),
     )
 
 

@@ -43,6 +43,27 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 - **Needs work:** the older `@excalidraw/utils` 0.1.2 package ignores `lineHeight` and `roundness`, so two-line labels overlap and straight arrows curve. Easy to mistake for a broken file.
 - **Build with it again?** Yes.
 
+### Lenis (smooth scrolling) and scroll-driven animation
+- **Used for:** the landing page (`landing/`): smooth scrolling, plus a pinned 760 vh opening sequence driven by scroll progress.
+- **Worked well:** Lenis needs one `raf` loop and works with plain `getBoundingClientRect()` progress, so no animation library was needed; writing transforms straight to the DOM keeps React out of the 60 fps path.
+- **Needs work:** `mix-blend-mode: multiply` does nothing inside a layer that has its own opacity or transform (it only blends within that group), so a white-backdrop photo showed as a white box; we cut the backdrop out into a transparent WebP instead.
+- **Build with it again?** Yes.
+
+### Amazon Cognito (family login)
+- **Used for:** email + password sign-up for the family dashboard, with the 6-digit verification and password-reset codes emailed by Cognito.
+- **Worked well:** the public user-pool operations (`SignUp`, `ConfirmSignUp`, `InitiateAuth`, `ForgotPassword`, …) are plain JSON POSTs with an `X-Amz-Target` header and only need the app client id, so the browser calls them with `fetch` and no SDK. The default Cognito sender means no SES setup for a hackathon.
+- **Needs work:** errors come back as `__type` strings, sometimes namespaced (`…#UsernameExistsException`), so you have to normalise them yourself. With `PreventUserExistenceErrors`, `ForgotPassword` succeeds for unknown emails, which is right for security but needs careful wording on the screen.
+- **Build with it again?** Yes.
+
+### shadcn/ui charts, Magic UI and Aceternity components
+- **Used for:** the dashboard's stat cards, radial and area charts, animated list, pulsating button, ripple, theme toggle and login screen, and the landing page's text animations, iPhone and Safari mockups, animated beam and timeline.
+- **Worked well:** copy-in components from each registry's JSON (`/r/<name>.json`) mean no runtime dependency on the libraries themselves, just `motion`, `recharts`, `clsx` and `tailwind-merge`.
+- **Needs work:**
+  - Magic UI's keyframes use per-element variables (`--duration`, `--angle`). In Tailwind 4 they must go in `@theme inline`; in plain `@theme` the animation resolves once on `:root` and silently becomes `none`.
+  - Its "pulse" keyframe overrides Tailwind's `animate-pulse` skeletons, so we renamed it.
+  - In Recharts 3, a full 360° radial bar draws nothing, and the shadcn radial example's `PolarGrid` painted over the bar.
+- **Build with it again?** Yes, picking components that fit a calm, flat design.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |
@@ -55,6 +76,7 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | Verify scenarios end to end on Windows | Started the API with `DEMO_CLOCK_START=00:00` | `ValueError: Invalid isoformat string: '00:00'` at startup; later `ZoneInfoNotFoundError` in tests | Passed a full ISO timestamp; installed `tzdata` in the local venv |
 | Contribute scenarios upstream in a sub-folder | Planned `examples/elder_care/*.yml` | `scenarios.examples()` doesn't recurse, so names wouldn't resolve | Put the files flat in `examples/` like the existing ones |
 | Test the parent app with user-event and fake timers | `userEvent.setup({ advanceTimers })`, then `{ delay: null }` | Every click test timed out after 5 s | Used `fireEvent` inside `act` |
+| Blend a hand photo onto the landing page background | `mix-blend-mode: multiply` on an image inside an animated (opacity + transform) layer | The white studio backdrop stayed visible as a box | Pre-cut the backdrop into a transparent WebP |
 | Run the quick start on a fresh clone on Windows | `pip install -e ".[dev]"` in a deep folder | `OSError: No such file or directory` on a botocore data file (Windows 260-character path limit) | Cloned to a short path; enabling long paths also fixes it |
 
 ## Feature requests

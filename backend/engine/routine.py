@@ -74,6 +74,9 @@ def rollover_day(r: Routine, new_day: date) -> Routine:
     if r.today is not None and new_day <= r.today:
         return r
     if r.today_slots:
+        # Days learned before `day_slots` existed (older stored records) aren't in the list,
+        # so they can't be evicted exactly; count them conservatively instead.
+        untracked = r.days_seen > len(r.day_slots)
         slots = sorted(r.today_slots)
         for s in slots:
             r.hist[s] += 1
@@ -82,8 +85,12 @@ def rollover_day(r: Routine, new_day: date) -> Routine:
         if len(r.day_slots) > HISTORY_DAYS:
             for s in r.day_slots.pop(0):
                 r.hist[s] -= 1
-            r.first_times.pop(0)
-        r.days_seen = len(r.day_slots)
+        del r.first_times[:-HISTORY_DAYS]
+        if untracked:
+            r.days_seen = min(r.days_seen + 1, HISTORY_DAYS)
+            r.hist = [min(n, r.days_seen) for n in r.hist]  # O(96), only for old records
+        else:
+            r.days_seen = len(r.day_slots)
         med = int(median(r.first_times))
         r.median_first = med
         r.mad_first = int(median(abs(x - med) for x in r.first_times))

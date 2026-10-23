@@ -15,11 +15,18 @@ class Ok(BaseModel):
     ok: bool = True
 
 
+class Contact(BaseModel):
+    role: Literal["family", "neighbour"]
+    name: str
+
+
 class HomeOut(BaseModel):
     home_id: str
     parent_name: str
     city: str
     zones: list[str]
+    contacts: list[Contact] = []
+    parent_phone: str | None = None
 
 
 class LastSeen(BaseModel):

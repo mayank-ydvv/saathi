@@ -30,7 +30,7 @@ Builder** and **Open Source**.
 | Parent app | A big clock; when nudged, "Are you okay?" in large text, the Polly voice and one huge "I'm okay" button; English and हिन्दी | works |
 | Evening digest | Amazon Bedrock writes the day's summary at 21:00 | template fallback works; live Bedrock pending model access |
 | Visitor description | Amazon Bedrock describes the doorbell snapshot; strangers with no uniform and no package are flagged | built; live Bedrock pending model access |
-| Family dashboard | Live status (green / yellow / red), today's timeline, alerts, digest | not in `main` yet |
+| Family dashboard | Live status (green / yellow / red), today's timeline with doorbell snapshots, alerts with every escalation step, digest, routine charts; works on mock data or the real API | works; verified against the real API |
 | Demo scenarios | Six scripted days for the Ring emulator: normal, fall, late morning, 2 am door, scam visitor, carer's visit | works |
 
 ## Architecture
@@ -80,7 +80,21 @@ Run a whole demo day (emulator, API, seeded home, 14 learned days, then the scen
 scripts/demo_run.sh fall_day         # Ctrl-C to stop
 ```
 
-In a second terminal, the parent app against that backend:
+Or run everything connected with one command: the demo above plus the landing page, and the
+dashboard and parent app on the real API (`VITE_USE_MOCK=false`). Ctrl-C stops it all.
+
+```bash
+scripts/run_all.sh                   # fall_day; or e.g. scripts/run_all.sh night_door
+```
+
+| App | URL |
+|---|---|
+| Landing page (links to the other two) | http://localhost:5175 |
+| Family dashboard (create a demo account; the code is shown on screen) | http://localhost:5173 |
+| Parent app | http://localhost:5174 |
+| API | http://localhost:8000 |
+
+To run the apps one at a time instead, start the parent app in a second terminal:
 
 ```bash
 cd parent-app
@@ -90,6 +104,18 @@ npm run dev                          # http://localhost:5174
 ```
 
 Leave out `.env.local` to run the parent app on its own with a mock nudge after 10 seconds.
+
+And the family dashboard:
+
+```bash
+cd dashboard
+npm install
+echo "VITE_USE_MOCK=false" > .env.local
+npm run dev                          # http://localhost:5173
+```
+
+Leave out `.env.local` to run it on mock data; the **Demo** switch in its top bar (Normal ·
+Checking · Alert) shows each state. More in [dashboard/README.md](dashboard/README.md).
 
 ## Running the demo scenarios
 

@@ -4,6 +4,9 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE?: string;
   readonly VITE_HOME_ID?: string;
   readonly VITE_USE_MOCK?: string;
+  readonly VITE_LANDING_URL?: string;
+  readonly VITE_COGNITO_REGION?: string;
+  readonly VITE_COGNITO_CLIENT_ID?: string;
 }
 
 interface ImportMeta {

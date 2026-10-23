@@ -1,6 +1,7 @@
 import type { RoutineZone } from "../api/types";
 import { zoneLabel } from "../lib/labels";
 import { peaks } from "../lib/routine";
+import { zoneColour } from "../lib/zones";
 
 const HOURS = [0, 6, 12, 18, 24];
 
@@ -45,7 +46,8 @@ export function RoutineChart({ zone }: { zone: RoutineZone }) {
                 y={100 - h}
                 width={0.76}
                 height={h}
-                className="fill-accent"
+                rx={0.3}
+                fill={zoneColour(zone.zone)}
                 opacity={0.35 + 0.65 * (count / max)}
               >
                 <title>
