@@ -80,7 +80,21 @@ Run a whole demo day (emulator, API, seeded home, 14 learned days, then the scen
 scripts/demo_run.sh fall_day         # Ctrl-C to stop
 ```
 
-In a second terminal, the parent app against that backend:
+Or run everything connected with one command: the demo above plus the landing page, and the
+dashboard and parent app on the real API (`VITE_USE_MOCK=false`). Ctrl-C stops it all.
+
+```bash
+scripts/run_all.sh                   # fall_day; or e.g. scripts/run_all.sh night_door
+```
+
+| App | URL |
+|---|---|
+| Landing page (links to the other two) | http://localhost:5175 |
+| Family dashboard (create a demo account; the code is shown on screen) | http://localhost:5173 |
+| Parent app | http://localhost:5174 |
+| API | http://localhost:8000 |
+
+To run the apps one at a time instead, start the parent app in a second terminal:
 
 ```bash
 cd parent-app
