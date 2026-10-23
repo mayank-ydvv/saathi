@@ -51,8 +51,27 @@ photo-1545947597 and Pexels 8947174.
 
 ### Photo credits
 
-Neither licence requires attribution, but we credit the photographers of the photos we ship.
-TODO: fill in once the final picks are made.
+Neither licence requires attribution, but we credit the photographers of the photos we ship
+(option 1 of each slot, plus the three hand cut-outs in `public/hands/`).
+
+| Where on the page | Photo | Photographer |
+|---|---|---|
+| Hero | [Grandparents with boy](https://www.pexels.com/photo/grandparents-with-boy-18394078/) | Sagar Ahire (Pexels) |
+| Ma | [Smiling woman in white dress](https://www.pexels.com/photo/smiling-woman-in-white-dress-2703082/) | Nandhu Kumar (Pexels) |
+| Papa | [Smiling senior man sitting outdoors](https://www.pexels.com/photo/smiling-senior-man-sitting-outdoors-38544128/) | Zeynep Kahraman (Pexels) |
+| Rahul (son) | [A smiling young man in a dark blue sweater](https://unsplash.com/photos/a-smiling-young-man-in-a-dark-blue-sweater-rifCUO-4X8k) | Josias Garibay (Unsplash) |
+| Priya (daughter) | [Smiling woman in traditional attire outdoors](https://www.pexels.com/photo/smiling-woman-in-traditional-attire-outdoors-40407265/) | Subhrajyoti Paul (Pexels) |
+| Aarav (grandson) | [Boy wearing red knit cap](https://www.pexels.com/photo/boy-wearing-red-knit-cap-3494565/) | Yogendra Singh (Pexels) |
+| Mrs Iyer (neighbour) | [Portrait of a woman in traditional attire outdoors](https://www.pexels.com/photo/portrait-of-a-woman-in-traditional-attire-outdoors-38982379/) | Ravinder Ravi (Pexels) |
+| Doorbell snapshot | [A man in red polo shirt holding a box](https://www.pexels.com/photo/a-man-in-red-polo-shirt-holding-a-box-7363160/) | RDNE Stock project (Pexels) |
+| Front door at night | [Light over closed door](https://www.pexels.com/photo/light-over-closed-door-12748725/) | Erik Mclean (Pexels) |
+| Phone on a table | [A cell phone sitting on top of a wooden table](https://unsplash.com/photos/a-cell-phone-sitting-on-top-of-a-wooden-table-h9sILC6lR2g) | Omar Roque (Unsplash) |
+| Hand holding the phone (`hand-1.webp`, used) | [Person holding black android smartphone](https://unsplash.com/photos/person-holding-black-android-smartphone-mpzYWN5xQqc) | Олег Мороз (Unsplash) |
+| `hand-2.webp` (picker option) | [Person holding phone with hustle text](https://unsplash.com/photos/person-holding-phone-with-hustle-text-41yF2vjjk0g) | Fernando Hernandez (Unsplash) |
+| `hand-3.webp` (picker option) | [Person holding a mobile phone on white background](https://www.pexels.com/photo/close-up-shot-of-a-person-holding-a-mobile-phone-on-white-background-8947174/) | Kaboompics (Pexels) |
+
+If you change a pick, move the chosen option to the top of its list in `src/photoOptions.ts` and
+update its row here.
 
 ## Fonts
 
