@@ -1,50 +1,52 @@
 @import "tailwindcss";
 
 /*
- * Calm palette: warm neutrals, one teal accent, and three status colours. Text colours are
- * chosen for at least 4.5:1 contrast on their backgrounds in both schemes (WCAG AA).
+ * The landing page's "family almanac" palette (landing/src/index.css): parchment and linen
+ * surfaces, graphite text, deep ink for the one primary action, and earthy status colours
+ * (sage, ochre, terracotta) instead of bright green/amber/red. Flat: depth comes from surface
+ * colour and a hairline border, never shadows. Every text pair is at least 5.9:1 (WCAG AA).
  */
 :root {
-  --canvas: #f6f5f1;
-  --surface: #ffffff;
-  --surface-2: #efede7;
-  --ink: #1d2327;
-  --muted: #545e66;
-  --line: #e2dfd7;
-  --accent: #0f6f68;
+  --canvas: #f5f5ee; /* Parchment */
+  --surface: #fbfbf6;
+  --surface-2: #e4e7da; /* Linen */
+  --ink: #2f3136; /* Graphite */
+  --muted: #535557; /* Slate */
+  --line: #d7d7cb; /* Pressed Cotton */
+  --accent: #192830; /* Deep Ink */
   --accent-ink: #ffffff;
-  --ok-bg: #e6f3ea;
-  --ok-ink: #155232;
-  --ok-dot: #2f8a55;
-  --warn-bg: #fcf1d6;
-  --warn-ink: #6f4400;
-  --warn-dot: #c98a12;
-  --bad-bg: #fbe5e2;
-  --bad-ink: #8b1d14;
-  --bad-dot: #cf3b2b;
-  --shadow: 0 1px 2px rgb(20 24 27 / 0.05), 0 4px 16px rgb(20 24 27 / 0.06);
+  --ok-bg: #e4e7da;
+  --ok-ink: #2c4a2e;
+  --ok-dot: #5f7d4e;
+  --warn-bg: #f1e6cb;
+  --warn-ink: #6a4710;
+  --warn-dot: #b07f2a;
+  --bad-bg: #f1dcd2;
+  --bad-ink: #7d2b1d;
+  --bad-dot: #b3533c;
+  --shadow: none;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #14181b;
-    --surface: #1d2327;
-    --surface-2: #262d32;
-    --ink: #eef1f2;
-    --muted: #a9b4bb;
-    --line: #313a40;
-    --accent: #5ec4b8;
-    --accent-ink: #0b2724;
-    --ok-bg: #16301f;
-    --ok-ink: #a7e3bd;
-    --ok-dot: #4fbf7e;
-    --warn-bg: #36290c;
-    --warn-ink: #f6d58e;
-    --warn-dot: #e3a72f;
-    --bad-bg: #3b1916;
-    --bad-ink: #ffb9ae;
-    --bad-dot: #f06a58;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+    --canvas: #141f25;
+    --surface: #192830;
+    --surface-2: #22343d;
+    --ink: #f5f5ee;
+    --muted: #b8bcb0;
+    --line: #2c3e47;
+    --accent: #f5f5ee;
+    --accent-ink: #192830;
+    --ok-bg: #1f2e22;
+    --ok-ink: #cfe0c2;
+    --ok-dot: #8fae78;
+    --warn-bg: #33290f;
+    --warn-ink: #ecd7a2;
+    --warn-dot: #d1a24b;
+    --bad-bg: #3a1f19;
+    --bad-ink: #f1c2b4;
+    --bad-dot: #d9775f;
+    --shadow: none;
   }
 }
 
@@ -67,7 +69,21 @@
   --color-bad-ink: var(--bad-ink);
   --color-bad-dot: var(--bad-dot);
   --shadow-card: var(--shadow);
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Noto Sans", sans-serif;
+  --font-sans: "ABC Arizona Sans", "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --font-flare: "ABC Arizona Flare", "Belleza", ui-serif, Georgia, serif;
+}
+
+/* Same shape language as the landing page: one font weight, corners of at most 6 px, no shadows. */
+@theme {
+  --font-weight-medium: 400;
+  --font-weight-semibold: 400;
+  --font-weight-bold: 400;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --shadow-sm: none;
+  --shadow-2xl: none;
 }
 
 html {
@@ -81,6 +97,27 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  font-synthesis: none;
+}
+
+/* Headings and the wordmark in the display face, tightly tracked like the landing page. */
+h1,
+h2,
+.flare {
+  font-family: var(--font-flare);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+/* Cards are flat: a hairline border instead of the old drop shadow. */
+.shadow-card {
+  box-shadow: none;
+  border: 1px solid var(--line);
 }
 
 :focus-visible {
