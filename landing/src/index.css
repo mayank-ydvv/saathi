@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* Tokens from DESIGN.md. ABC Arizona is a paid font, so the free fallbacks come first. */
+@theme {
+  --color-deep-ink: #192830;
+  --color-parchment: #f5f5ee;
+  --color-linen: #e4e7da;
+  --color-pressed-cotton: #d7d7cb;
+  --color-graphite: #2f3136;
+  --color-slate: #535557;
+  --color-dusk: #424e52;
+  --color-olive: #393e28;
+  --color-mist: #b3c4cd;
+
+  --font-flare: "ABC Arizona Flare", "Belleza", ui-serif, Georgia, serif;
+  --font-sans: "ABC Arizona Sans", "Alegreya Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --text-caption: 14px;
+  --text-caption--line-height: 1;
+  --text-caption--letter-spacing: -0.35px;
+  --text-body: 16px;
+  --text-body--line-height: 1.2;
+  --text-body--letter-spacing: -0.32px;
+  --text-body-lg: 20px;
+  --text-body-lg--line-height: 1.2;
+  --text-body-lg--letter-spacing: -0.32px;
+  --text-heading-sm: 40px;
+  --text-heading-sm--line-height: 1;
+  --text-heading-sm--letter-spacing: -1.24px;
+  --text-heading: 48px;
+  --text-heading--line-height: 1;
+  --text-heading--letter-spacing: -2.02px;
+  --text-display: 64px;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -3.2px;
+
+  --radius-card: 6px;
+  --radius-button: 4px;
+}
+
+html {
+  background: var(--color-parchment);
+  color: var(--color-graphite);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background: var(--color-parchment);
+  overflow-x: clip;
+}
+
+/* One weight everywhere (DESIGN.md): never let the browser fake bold. */
+* {
+  font-synthesis: none;
+}
+b,
+strong,
+h1,
+h2,
+h3 {
+  font-weight: 400;
+}
+
+/* Lenis smooth scrolling. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.flare {
+  font-family: var(--font-flare);
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+/* Blinking caret for the typing lines. */
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: caret 1s steps(1) infinite;
+}
+
+/* Voice waveform bars. */
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Endless vertical list in the Connect card. */
+@keyframes ticker {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* Endless horizontal strip inside the digest phone screen. */
+@keyframes strip {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Scanner corners sweeping over the doorbell snapshot. */
+@keyframes scan {
+  0%,
+  100% {
+    inset: 14% 18% 22% 18%;
+  }
+  50% {
+    inset: 20% 26% 30% 24%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
