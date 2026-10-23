@@ -23,7 +23,10 @@ STEP_TITLES = {
 
 
 def greeting(now: datetime) -> str:
+    """By local hour. Before 05:00 it is still night, so no "Good morning" at 02:10 (L2)."""
     hour = local(now).hour
+    if hour < 5:
+        return "Hello"
     if hour < 12:
         return "Good morning"
     if hour < 17:
@@ -49,8 +52,9 @@ def alert_text(
     """Telegram/SNS body for a family or neighbour alert."""
     parent = home.get("parent_name", "your parent")
     step = STEP_TITLES.get(alert["state"], alert["state"])
+    city = f" ({home['city']})" if home.get("city") else ""  # no "()" without a city (L4)
     return (
-        f"Saathi: {step} for {parent} ({home.get('city', '')})\n"
+        f"Saathi: {step} for {parent}{city}\n"
         f"{alert['reason']}\n"
         f"Last seen: {last_seen_text(last_seen)}\n"
         f"{parent} did not answer the check-in. Please call or visit."

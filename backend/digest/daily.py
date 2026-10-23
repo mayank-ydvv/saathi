@@ -28,14 +28,23 @@ If a fact is missing, do not mention it.
 suggestion, such as a call. Otherwise end on a reassuring note."""
 
 
-def compute_facts(home: dict, events: list[Event], alerts: list[dict], day: date) -> dict:
-    """Deterministic facts for one local day. One pass over the sorted events, O(n log n)."""
+def compute_facts(
+    home: dict, events: list[Event], alerts: list[dict], day: date, until: int = WAKING[1]
+) -> dict:
+    """Deterministic facts for one local day. One pass over the sorted events, O(n log n).
+
+    The longest quiet stretch while awake runs from 06:00, through every event, to `until`
+    (minute of the day the digest is written, at most 22:00), so a silent afternoon after
+    the last event counts too (M1).
+    """
     tz = ZoneInfo(TIMEZONE)
     first: dict[str, str] = {}
     meals: list[str] = []
     outings = dings = 0
+    end = min(WAKING[1], until)
     longest_quiet = 0
-    prev_min = last_kitchen = last_door = None
+    prev_awake = WAKING[0]
+    last_kitchen = last_door = None
     indoor_since_door = False
     for e in sorted(events, key=lambda ev: ev.ts):
         t = e.ts.astimezone(tz)
@@ -44,10 +53,10 @@ def compute_facts(home: dict, events: list[Event], alerts: list[dict], day: date
         m = t.hour * 60 + t.minute
         first.setdefault(e.zone, _hhmm(m))
         dings += e.type == "ding"
-        if prev_min is not None and WAKING[0] <= prev_min and m <= WAKING[1]:
-            longest_quiet = max(longest_quiet, m - prev_min)
-        prev_min = m
-        if e.zone == "kitchen":
+        if WAKING[0] <= m <= end:
+            longest_quiet = max(longest_quiet, m - prev_awake)
+            prev_awake = m
+        if e.zone == "kitchen" and WAKING[0] <= m < WAKING[1]:  # 02:00 isn't "breakfast" (L5)
             if last_kitchen is None or m - last_kitchen > MEAL_GAP_MIN:
                 meals.append(f"{_meal(m)} around {_hhmm(m)}")
             last_kitchen = m
@@ -57,6 +66,7 @@ def compute_facts(home: dict, events: list[Event], alerts: list[dict], day: date
             last_door, indoor_since_door = m, False
         else:
             indoor_since_door = True
+    longest_quiet = max(longest_quiet, end - prev_awake, 0)
     return {
         "parent_name": home.get("parent_name") or "Your parent",
         "date": day.isoformat(),
@@ -70,9 +80,11 @@ def compute_facts(home: dict, events: list[Event], alerts: list[dict], day: date
     }
 
 
-def generate_digest(home: dict, events: list[Event], alerts: list[dict], day: date) -> str:
+def generate_digest(
+    home: dict, events: list[Event], alerts: list[dict], day: date, until: int = WAKING[1]
+) -> str:
     """80-120 word evening update. Bedrock words it from facts only; template if unavailable."""
-    facts = compute_facts(home, events, alerts, day)
+    facts = compute_facts(home, events, alerts, day, until)
     text = bedrock.converse(SYSTEM, [{"text": "FACTS:\n" + json.dumps(facts)}], max_tokens=300)
     return text or fallback_digest(facts)
 

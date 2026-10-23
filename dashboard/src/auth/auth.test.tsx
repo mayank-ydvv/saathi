@@ -3,15 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "../App";
-import { ROUTER_FUTURE } from "../routerFuture";
 import { createCognitoAuth, jwtClaims } from "./cognito";
 import { createDemoAuth } from "./demo";
-import { setSession } from "./session";
+import { auth, authHeader, ensureFresh, getSession, setSession } from "./session";
 import { AuthError } from "./types";
 
 function renderAt(path: string) {
   return render(
-    <MemoryRouter initialEntries={[path]} future={ROUTER_FUTURE}>
+    <MemoryRouter initialEntries={[path]}>
       <AppRoutes />
     </MemoryRouter>,
   );
@@ -145,5 +144,36 @@ describe("login gate", () => {
   it("links the saathi mark back to the landing page", () => {
     renderAt("/login");
     expect(screen.getByRole("link", { name: "Saathi home page" })).toHaveAttribute("href", "http://localhost:5175");
+  });
+});
+
+describe("session refresh (M9) and the API token (C1)", () => {
+  const expired = {
+    email: "priya@example.com",
+    name: "Priya",
+    idToken: "old",
+    accessToken: "a",
+    refreshToken: "r",
+    expiresAt: Date.now() - 1000,
+  };
+
+  it("keeps the session when a refresh fails because the network is down", async () => {
+    setSession(expired);
+    vi.spyOn(auth, "refresh").mockRejectedValue(new AuthError("NetworkError"));
+    expect(await ensureFresh()).toMatchObject({ email: "priya@example.com" });
+    expect(getSession()).not.toBeNull();
+  });
+
+  it("signs out only when Cognito rejects the refresh token", async () => {
+    setSession(expired);
+    vi.spyOn(auth, "refresh").mockRejectedValue(new AuthError("NotAuthorizedException"));
+    expect(await ensureFresh()).toBeNull();
+    expect(getSession()).toBeNull();
+  });
+
+  it("sends a freshly renewed id token as the Authorization header", async () => {
+    setSession(expired);
+    vi.spyOn(auth, "refresh").mockResolvedValue({ ...expired, idToken: "new", expiresAt: Date.now() + 3600_000 });
+    expect(await authHeader()).toEqual({ Authorization: "Bearer new" });
   });
 });

@@ -7,7 +7,7 @@ import { useSyncExternalStore } from "react";
 import { setFamilyName } from "../hooks/useFamilyName";
 import { createCognitoAuth } from "./cognito";
 import { createDemoAuth } from "./demo";
-import type { AuthProvider, Session } from "./types";
+import { AuthError, type AuthProvider, type Session } from "./types";
 
 const KEY = "saathi.session";
 const listeners = new Set<() => void>();
@@ -61,19 +61,45 @@ export async function signOut(): Promise<void> {
   if (s) await auth.signOut(s);
 }
 
-/** Renews the tokens if they expire within a minute. Returns the usable session or null. */
+let refreshing: Promise<Session | null> | null = null;
+
+/**
+ * Renews the tokens if they expire within a minute; returns the usable session or null.
+ * Only a refresh token Cognito rejects signs you out (M9). Being offline keeps the session,
+ * and the next call tries again. Concurrent callers share one refresh.
+ */
 export async function ensureFresh(now = Date.now()): Promise<Session | null> {
   const s = read();
   if (!s) return null;
   if (s.expiresAt - now > 60_000) return s;
-  try {
-    const next = await auth.refresh(s);
-    setSession(next);
-    return next;
-  } catch {
-    setSession(null);
-    return null;
-  }
+  refreshing ??= auth
+    .refresh(s)
+    .then((next) => {
+      setSession(next);
+      return next;
+    })
+    .catch((err: unknown) => {
+      if (err instanceof AuthError && err.code === "NotAuthorizedException") {
+        setSession(null);
+        return null;
+      }
+      return s; // offline / throttled: keep it, retry on the next call
+    })
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+/** `Authorization` header for API calls, with a token renewed if needed (C1, M9). */
+export async function authHeader(): Promise<Record<string, string>> {
+  const s = await ensureFresh();
+  return s ? { Authorization: `Bearer ${s.idToken}` } : {};
+}
+
+/** The API rejected the token (401): drop the session so the login screen shows. */
+export function signOutAfterRejection(): void {
+  if (read()) setSession(null);
 }
 
 function subscribe(notify: () => void) {

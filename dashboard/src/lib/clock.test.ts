@@ -18,13 +18,20 @@ describe("real-mode clock", () => {
       "fetch",
       vi.fn().mockResolvedValue(new Response(JSON.stringify({ now: demo }), { status: 200 })),
     );
-    expect(await syncServerClock()).toBe(true);
+    expect(await syncServerClock()).toBe("synced");
     expect(Math.abs(now().getTime() - Date.parse(demo))).toBeLessThan(2_000);
   });
 
   it("uses device time when the backend has no demo clock", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 404 })));
-    expect(await syncServerClock()).toBe(false);
+    expect(await syncServerClock()).toBe("absent");
     expect(Math.abs(now().getTime() - Date.now())).toBeLessThan(50);
+  });
+
+  it("reports a backend that isn't up yet as an error, so sync retries (M7)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    expect(await syncServerClock()).toBe("error");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("oops", { status: 502 })));
+    expect(await syncServerClock()).toBe("error");
   });
 });

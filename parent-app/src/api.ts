@@ -22,16 +22,25 @@ async function json<T>(resp: Response): Promise<T> {
   return (await resp.json()) as T;
 }
 
-/** The real backend: GET /homes/{id}, GET /homes/{id}/nudge, POST /alerts/{id}/ack. */
-export function createHttpApi(base: string, homeId: string, fetchFn: typeof fetch = fetch): Api {
+/**
+ * The real backend: GET /homes/{id}, GET /homes/{id}/nudge, POST /alerts/{id}/ack. Every call
+ * carries the tablet's device token when one is configured (C1).
+ */
+export function createHttpApi(
+  base: string,
+  homeId: string,
+  fetchFn: typeof fetch = fetch,
+  deviceToken = "",
+): Api {
   const home = encodeURIComponent(homeId);
+  const auth: Record<string, string> = deviceToken ? { "X-Device-Token": deviceToken } : {};
   return {
-    getHome: async () => json<Home>(await fetchFn(`${base}/homes/${home}`)),
-    getNudge: async () => json<Nudge>(await fetchFn(`${base}/homes/${home}/nudge`)),
+    getHome: async () => json<Home>(await fetchFn(`${base}/homes/${home}`, { headers: auth })),
+    getNudge: async () => json<Nudge>(await fetchFn(`${base}/homes/${home}/nudge`, { headers: auth })),
     ack: async (alertId, name) => {
       const resp = await fetchFn(`${base}/alerts/${encodeURIComponent(alertId)}/ack`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({ by: "parent", name }),
       });
       await json<unknown>(resp);

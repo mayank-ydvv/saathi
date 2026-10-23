@@ -30,6 +30,15 @@ How the backend is put together, and the optional settings that are not in `.env
 | `TELEGRAM_WEBHOOK_SECRET` | empty | `secret_token` given to Telegram `setWebhook`; checked on `/telegram/webhook` |
 | `ROUTINES_FILE` | `sandbox/fixtures/routines_home-demo-1.json` | Backfill output loaded by seeding |
 | `FAMILY_NAME`, `NEIGHBOUR_NAME` | `Priya`, `Ravi` | Contact names used in messages and acks |
+| `AUTH_MODE` | `off` | `cognito`: every data route needs the family's Cognito id token (`Authorization: Bearer …`) or, for the parent app's nudge/home/own ack, the tablet's `X-Device-Token`. The SAM stack sets `cognito` |
+| `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID` | empty | User pool and app client the id tokens must come from (required with `AUTH_MODE=cognito`) |
+| `PARENT_DEVICE_TOKEN` | empty | Secret the parent tablet sends as `X-Device-Token` |
+| `FAMILY_EMAILS` | empty | Comma-separated emails written onto the home by seeding; only these accounts may read it |
+| `CORS_ORIGINS` | the three local app origins | Comma-separated browser origins allowed by CORS |
+
+`RING_WEBHOOK_HMAC_KEY` has no default: the API and the Lambdas refuse to start without it.
+`DEMO_MODE` defaults to `false`. With `true` *and* `STORAGE=memory` it mounts `/_dev/*` and
+applies `DEMO_CLOCK_START`; with `STORAGE=dynamo` (AWS) it only shortens the ladder waits.
 | `PARENT_PHONE` | empty | The parent's phone number, stored on the home when seeding; the dashboard shows a "Call" button only when it is set |
 
 ## Design notes

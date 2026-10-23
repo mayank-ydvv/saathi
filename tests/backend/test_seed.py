@@ -32,5 +32,5 @@ def test_load_routines_accepts_zone_map_and_skips_unknown_zones(store, tmp_path)
     path = tmp_path / "routines.json"
     path.write_text(json.dumps({"kitchen": kitchen, "garage": garage}))
     assert load_routines(store, path) == 1
-    assert store.get_routine(HOME, "kitchen") == kitchen
+    assert store.get_routine(HOME, "kitchen") == {**kitchen, "rev": 1}
     assert load_routines(store, tmp_path / "missing.json") == 0

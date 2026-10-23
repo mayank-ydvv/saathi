@@ -65,12 +65,19 @@ def ensure_demo_cameras(
 
 
 def build_home(
-    devices: list[RingDevice], settings: Settings, existing: dict[str, Any] | None
+    devices: list[RingDevice],
+    settings: Settings,
+    existing: dict[str, Any] | None,
+    home_id: str = DEMO_HOME_ID,
 ) -> dict[str, Any]:
     home = dict(existing or {})
     home.update(
         {
-            "home_id": DEMO_HOME_ID,
+            "home_id": home_id,  # not always home-demo-1 (L10)
+            # Who may read this home through the API (C2); kept if already set.
+            "family_emails": sorted(
+                set(home.get("family_emails") or []) | set(settings.family_emails)
+            ),
             "parent_name": home.get("parent_name", "Kamala"),
             "city": home.get("city", "Chennai"),
             "parent_phone": home.get("parent_phone") or settings.parent_phone,
@@ -98,13 +105,14 @@ def seed_home(
     add_demo_cameras: bool = True,
     http: httpx.Client | None = None,
 ) -> dict[str, Any]:
-    """List devices via RingClient, map them to zones, and upsert `home-demo-1`."""
+    """List devices via RingClient, map them to zones, and upsert the first HOME_IDS home."""
+    home_id = settings.home_ids[0] if settings.home_ids else DEMO_HOME_ID
     devices = ring.list_devices()
     if add_demo_cameras and ensure_demo_cameras(settings.ring_api_base, devices, http):
         devices = ring.list_devices()
-    home = build_home(devices, settings, store.get_home(DEMO_HOME_ID))
+    home = build_home(devices, settings, store.get_home(home_id), home_id)
     store.put_home(home)
-    log.info("seeded %s with zones %s", DEMO_HOME_ID, sorted(set(home["devices"].values())))
+    log.info("seeded %s with zones %s", home_id, sorted(set(home["devices"].values())))
     return home
 
 

@@ -10,7 +10,7 @@ from backend.api.main import create_app
 from backend.common import clock, engine
 from backend.common.timeutil import to_iso
 from backend.engine.models import Anomaly
-from backend.escalation.alerts import alert_from_anomaly
+from backend.escalation.alerts import alert_from_anomaly, new_alert_id
 from tests.backend.conftest import device_for, signed
 from tests.backend.factories import HOME, at, normal_days
 
@@ -48,7 +48,9 @@ def _put_alert(store, state="SUSPECT", minutes=0):
     anomaly = Anomaly(
         HOME, "late_start", "kitchen", "No kitchen movement by 10:15", at(DAY, "10:15"), {}
     )
-    alert = alert_from_anomaly(anomaly, at(DAY, "10:15") + timedelta(minutes=minutes))
+    when = at(DAY, "10:15") + timedelta(minutes=minutes)
+    alert = alert_from_anomaly(anomaly, when)
+    alert["alert_id"] = new_alert_id(when)  # ids normally come from the real clock (H3)
     alert["state"] = state
     alert["steps"].append({"state": state, "at": alert["created_at"]})
     store.put_alert(alert)
@@ -221,8 +223,9 @@ def test_dev_clock_and_tick(api):
 
 
 def test_dev_seed_and_blob_route(api, store, tmp_path):
+    # C4: a path in the request body is ignored; only the configured fixtures file is read.
     body = api.post("/_dev/seed", json={"routines_file": str(tmp_path / "none.json")}).json()
-    assert body["routines_loaded"] == 0 and body["home"]["home_id"] == HOME
+    assert body["routines_loaded"] > 0 and body["home"]["home_id"] == HOME
     store.save_blob("snapshots/x.png", b"\x89PNGdata", "image/png")
     resp = api.get("/blobs/snapshots/x.png")
     assert resp.content == b"\x89PNGdata" and resp.headers["content-type"] == "image/png"

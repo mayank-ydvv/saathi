@@ -47,7 +47,13 @@ export function usePolling<T>(
       ctrl?.abort();
       const mine = new AbortController();
       ctrl = mine;
-      const result = await fetcherRef.current(mine.signal);
+      let result: Result<T>;
+      try {
+        result = await fetcherRef.current(mine.signal);
+      } catch (err) {
+        // A fetcher that throws must not stop polling for good (M8).
+        result = { ok: false, error: { kind: "network", message: err instanceof Error ? err.message : "error" } };
+      }
       if (stopped || mine.signal.aborted) return;
       if (result.ok) {
         setData(result.data);

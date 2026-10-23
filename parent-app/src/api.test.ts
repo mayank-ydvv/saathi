@@ -10,7 +10,16 @@ describe("createHttpApi", () => {
     const fetchFn = vi.fn(() => ok({ active: false, alert_id: null, message: null, audio_url: null }));
     const api = createHttpApi("http://api.test", "home-demo-1", fetchFn);
     await api.getNudge();
-    expect(fetchFn).toHaveBeenCalledWith("http://api.test/homes/home-demo-1/nudge");
+    expect(fetchFn).toHaveBeenCalledWith("http://api.test/homes/home-demo-1/nudge", { headers: {} });
+  });
+
+  it("sends the tablet's device token when configured (C1)", async () => {
+    const fetchFn = vi.fn(() => ok({ active: false, alert_id: null, message: null, audio_url: null }));
+    const api = createHttpApi("http://api.test", "home-demo-1", fetchFn, "tablet-secret");
+    await api.getNudge();
+    expect(fetchFn).toHaveBeenCalledWith("http://api.test/homes/home-demo-1/nudge", {
+      headers: { "X-Device-Token": "tablet-secret" },
+    });
   });
 
   it("acknowledges with POST /alerts/{id}/ack and the parent body from the contract", async () => {

@@ -45,3 +45,13 @@ def test_polly_failure_serves_fallback_clip(store):
     assert url.endswith(FALLBACK_KEY)
     data, content_type = store.get_blob(FALLBACK_KEY)
     assert content_type == "audio/mp4" and len(data) > 1000
+
+
+def test_a_fresh_url_every_time_because_presigned_links_expire(store, monkeypatch):
+    """H7: only the blob key is cached; each request gets a newly signed URL."""
+    voice = Voice(store, polly=FakePolly())
+    voice.ensure(TEXT)  # synthesise and store the clip first
+    issued = iter(["https://s3/one?sig=1", "https://s3/one?sig=2"])
+    monkeypatch.setattr(store, "blob_url", lambda key: next(issued))
+    assert voice.audio_url(TEXT) == "https://s3/one?sig=1"
+    assert voice.audio_url(TEXT) == "https://s3/one?sig=2"

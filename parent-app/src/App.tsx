@@ -7,7 +7,7 @@ import { IdleScreen } from "./screens/Idle";
 import { type AckState, NudgeScreen } from "./screens/Nudge";
 import { ThanksScreen } from "./screens/Thanks";
 import { UnlockScreen } from "./screens/Unlock";
-import { LANG_KEY, readSetting, SOUND_KEY, writeSetting } from "./storage";
+import { LANG_KEY, readSetting, writeSetting } from "./storage";
 import { speak, useRepeatingVoice } from "./voice";
 
 export function App({ api }: { api: Api }) {
@@ -15,7 +15,9 @@ export function App({ api }: { api: Api }) {
     const saved = readSetting(LANG_KEY);
     return isLang(saved) ? saved : "en";
   });
-  const [soundOn, setSoundOn] = useState(() => readSetting(SOUND_KEY) === "true");
+  // Not remembered across reloads (M6): browsers only allow sound after a tap on *this* page
+  // load, so the Unlock screen always comes back after a refresh.
+  const [soundOn, setSoundOn] = useState(false);
   const [sending, setSending] = useState(false);
   const [failedId, setFailedId] = useState<string | null>(null);
   const [ackedId, setAckedId] = useState<string | null>(null);
@@ -30,9 +32,13 @@ export function App({ api }: { api: Api }) {
   const nudging = alertId !== null && alertId !== ackedId && !thanking;
   const ackState: AckState = sending ? "sending" : failedId === alertId ? "failed" : "ready";
 
-  const spoken = `${t.greeting[dayPart(localHour(new Date()))]} ${name}. ${t.areYouOkay} ${t.pressGreen}`;
+  // English: the backend's own words (same greeting and clock as the Polly clip, L3).
+  // Hindi: our translation spoken by the browser, because the clip is English (M5).
+  const ownWords = `${t.greeting[dayPart(localHour(new Date()))]} ${name}. ${t.areYouOkay} ${t.pressGreen}`;
+  const spoken = lang === "en" && nudge?.message ? nudge.message : ownWords;
+  const audioUrl = lang === "en" ? (nudge?.audio_url ?? null) : null;
   const onBlocked = useCallback(() => setSoundOn(false), []);
-  useRepeatingVoice(nudging, nudge?.audio_url ?? null, spoken, t.locale, onBlocked);
+  useRepeatingVoice(nudging, audioUrl, spoken, t.locale, onBlocked);
 
   useEffect(() => {
     if (!thanking) return;
@@ -47,7 +53,6 @@ export function App({ api }: { api: Api }) {
 
   const unlock = () => {
     setSoundOn(true);
-    writeSetting(SOUND_KEY, "true");
     speak(t.soundOn, t.locale); // confirms sound works, and primes speech on Safari
   };
 

@@ -5,13 +5,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppRoutes } from "../App";
 import { StatusCard } from "../components/StatusCard";
 import { NOTIFICATION_DISMISS_KEY } from "../hooks/useNotifications";
-import { ROUTER_FUTURE } from "../routerFuture";
 import { installFakeNotification, type FakeNotification } from "../test/fakeNotification";
 
 function renderAt(path: string) {
   window.history.replaceState(null, "", path); // the mock reads ?mock= from the page URL
   return render(
-    <MemoryRouter initialEntries={[path]} future={ROUTER_FUTURE}>
+    <MemoryRouter initialEntries={[path]}>
       <AppRoutes />
     </MemoryRouter>,
   );

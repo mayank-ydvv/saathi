@@ -17,6 +17,7 @@ from typing import Any
 from backend.common import clock, engine
 from backend.common.config import Settings
 from backend.common.events import event_from_dict
+from backend.common.routine_store import update_routine
 from backend.common.store import Store
 from backend.common.timeutil import (
     local_date,
@@ -28,7 +29,7 @@ from backend.common.timeutil import (
 )
 from backend.engine.anomaly import LATE_START_ZONES
 from backend.engine.models import Anomaly, EngineConfig
-from backend.escalation.alerts import open_alert
+from backend.escalation.alerts import try_open_alert
 from backend.escalation.base import Escalator
 
 log = logging.getLogger(__name__)
@@ -83,24 +84,46 @@ class Scheduler:
             zone: engine.routine_from_dict(d)
             for zone, d in self.store.get_routines(home_id).items()
         }
-        for routine in routines.values():
+        for zone, routine in list(routines.items()):
             if routine.today is None or routine.today < today:  # quiet midnight
-                engine.rollover_day(routine, today)
-                self.store.put_routine(engine.routine_to_dict(routine))
+                # Conditional write (H9): a webhook landing now can't be lost, and if it
+                # already rolled the day over this is a no-op.
+                routines[zone], _ = update_routine(
+                    self.store, home_id, zone, lambda r: engine.rollover_day(r, today)
+                )
                 result.rolled_over += 1
+        before = {zone: dict(r.fired) for zone, r in routines.items()}
         anomalies = engine.check_tick(routines, now, self.cfg)
-        if anomalies:  # check_tick records "fired today" markers on the routines: keep them
-            for routine in routines.values():
-                self.store.put_routine(engine.routine_to_dict(routine))
+        for zone, routine in routines.items():  # keep the new "fired today" markers
+            marks = {k: v for k, v in routine.fired.items() if before[zone].get(k) != v}
+            if marks:
+                update_routine(self.store, home_id, zone, lambda r, m=marks: r.fired.update(m))
         for anomaly in anomalies:
             result.anomalies.append(anomaly)
-            alert = open_alert(self.store, anomaly, now)
+            alert, outcome = try_open_alert(self.store, anomaly, now)
             if alert is not None:
                 result.alerts.append(alert)
                 self.escalator.start(alert)
+            elif outcome == "open":  # M2: blocked by another alert; let it fire again later
+                self._unfire(home_id, anomaly, today, routines)
         digest = self._maybe_digest(home, now)
         if digest is not None:
             result.digests.append(digest)
+
+    def _unfire(
+        self, home_id: str, anomaly: Anomaly, today: date, routines: dict[str, Any]
+    ) -> None:
+        """Clear today's "fired" marker of a dropped anomaly. O(zones)."""
+        day = today.isoformat()
+        zones = list(routines) if anomaly.zone is None else [anomaly.zone]
+
+        def clear(r):
+            if r.fired.get(anomaly.kind) == day:
+                del r.fired[anomaly.kind]
+
+        for zone in zones:
+            if routines.get(zone) is not None and routines[zone].fired.get(anomaly.kind) == day:
+                update_routine(self.store, home_id, zone, clear)
 
     # digest --------------------------------------------------------------
     def _maybe_digest(self, home: dict[str, Any], now: datetime) -> dict[str, Any] | None:
@@ -108,10 +131,26 @@ class Scheduler:
         due = parse_hhmm(home.get("digest_time") or DEFAULT_DIGEST_TIME)
         if minute_of_day(now) < due or self._digested.get(home_id) == day:
             return None
-        self._digested[home_id] = day
         if self.store.get_digest(home_id, day) is not None:  # already sent before a restart
+            self._digested[home_id] = day
             return None
-        return self.build_digest(home, day, now)
+        record = self.deliver_digest(home, day, now)
+        self._digested[home_id] = day  # only after it worked (H4): a failure retries next tick
+        return record
+
+    def deliver_digest(
+        self, home: dict[str, Any], day: date, now: datetime
+    ) -> dict[str, Any] | None:
+        """Build and send the day's digest unless another runner already claimed it (H5:
+        the tick and the 21:00 Lambda run together). A failure releases the claim."""
+        home_id = home["home_id"]
+        if not self.store.claim_digest(home_id, day):
+            return None
+        try:
+            return self.build_digest(home, day, now)
+        except Exception:
+            self.store.release_digest(home_id, day)
+            raise
 
     def _trends(self, home_id: str) -> str:
         """Weekly trends for the zones where the day starts, as sentences ("" if none).
@@ -141,7 +180,10 @@ class Scheduler:
             if start <= parse_iso(a["created_at"]) < end
         ]
         try:
-            text = engine.generate_digest(home, events, alerts, day)
+            until = (
+                minute_of_day(now) if local_date(now) == day else 24 * 60
+            )  # quiet up to now (M1)
+            text = engine.generate_digest(home, events, alerts, day, until)
         except Exception:  # generate_digest has its own Bedrock fallback; this is a last resort
             log.exception("generate_digest failed")
             text = f"{home.get('parent_name', 'Your parent')}: {len(events)} events recorded today."

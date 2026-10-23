@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import os
+
 import httpx
 import pytest
 from ring_sandbox import webhooks
@@ -14,6 +16,10 @@ from backend.ingest.ring_client import RingGateway
 
 HMAC_KEY = "test-hmac-key"
 RING_BASE = "http://localhost:8787"
+
+# The API refuses to start without a webhook key (M11); importing backend.api.main builds
+# the module-level app, so give the test process one before any test module imports it.
+os.environ.setdefault("RING_WEBHOOK_HMAC_KEY", HMAC_KEY)
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +41,10 @@ def _reset_clock():
 
 @pytest.fixture
 def settings():
-    return load_settings({"RING_WEBHOOK_HMAC_KEY": HMAC_KEY, "RING_API_BASE": RING_BASE})
+    # Demo mode is opt-in now (C3); these tests use its /_dev routes and short ladder waits.
+    return load_settings(
+        {"RING_WEBHOOK_HMAC_KEY": HMAC_KEY, "RING_API_BASE": RING_BASE, "DEMO_MODE": "true"}
+    )
 
 
 @pytest.fixture

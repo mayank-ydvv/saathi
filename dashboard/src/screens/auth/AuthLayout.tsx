@@ -66,7 +66,7 @@ export function AuthLayout({ title, sub, children }: { title: string; sub?: Reac
           </OrbitingCircles>
         </div>
         <p className="flare absolute inset-x-0 bottom-12 mx-auto max-w-[420px] px-6 text-center text-[28px] leading-tight text-ink">
-          Everyone who looks out for Ma, in one place.
+          Everyone who looks out for your parent, in one place.
         </p>
       </aside>
     </div>

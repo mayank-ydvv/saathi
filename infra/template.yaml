@@ -38,8 +38,24 @@ Parameters:
     Default: ""
   DemoMode:
     Type: String
-    Default: "true"
+    Default: "false"
     AllowedValues: ["true", "false"]
+    Description: >
+      "true" only shortens the ladder waits (10/15/20 s) for filming. The /_dev routes and
+      the demo clock are never available on AWS (they are STORAGE=memory features).
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Default: http://localhost:5173,http://localhost:5174,http://localhost:5175
+    Description: Browser origins of the dashboard, parent app and landing page (CORS).
+  ParentDeviceToken:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: Secret the parent tablet sends as X-Device-Token (nudge + its own "I'm okay").
+  FamilyEmails:
+    Type: String
+    Default: ""
+    Description: Comma-separated emails allowed to read the home through the API.
   AlertEmail:
     Type: String
     Default: ""
@@ -72,6 +88,13 @@ Globals:
         BLOB_BUCKET: !Ref BlobBucket
         SNS_TOPIC_ARN: !Ref AlertTopic
         STATE_MACHINE_ARN: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+        # Every data route checks the family's Cognito id token or the tablet's device token.
+        AUTH_MODE: cognito
+        COGNITO_USER_POOL_ID: !Ref FamilyUserPool
+        COGNITO_CLIENT_ID: !Ref FamilyUserPoolClient
+        PARENT_DEVICE_TOKEN: !Ref ParentDeviceToken
+        FAMILY_EMAILS: !Ref FamilyEmails
+        CORS_ORIGINS: !Join [",", !Ref AllowedOrigins]
 
 Resources:
   # ---------------------------------------------------------------- storage (contract 4.5)
@@ -214,11 +237,9 @@ Resources:
     Type: AWS::Serverless::HttpApi
     Properties:
       CorsConfiguration:
-        AllowOrigins:
-          - http://localhost:5173
-          - http://localhost:5174
+        AllowOrigins: !Ref AllowedOrigins
         AllowMethods: [GET, POST, OPTIONS]
-        AllowHeaders: [content-type]
+        AllowHeaders: [content-type, authorization, x-device-token]
 
   ApiFunction:
     Type: AWS::Serverless::Function
@@ -254,7 +275,7 @@ Resources:
               Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
             - Effect: Allow
               Action: [states:SendTaskSuccess]
-              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+              Resource: "*"  # this action has no resource type (C5)
       Events:
         Root:
           Type: HttpApi
@@ -403,7 +424,7 @@ Resources:
               Resource: !Ref AlertTopic
             - Effect: Allow
               Action: [states:SendTaskSuccess]
-              Resource: !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:saathi-escalation
+              Resource: "*"  # this action has no resource type (C5)
     Metadata:
       BuildMethod: makefile
       ContextPath: .
