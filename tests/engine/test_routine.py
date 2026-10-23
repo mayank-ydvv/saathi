@@ -118,3 +118,19 @@ def test_from_dict_accepts_records_without_day_slots():
     d = routine_to_dict(new_routine("home-demo-1", "kitchen"))
     del d["day_slots"]
     assert routine_from_dict(d).day_slots == []
+
+
+def test_legacy_record_without_day_slots_stays_within_the_window():
+    # A routine saved before day_slots existed: 14 days learned, no per-day slot lists.
+    r = run(*(ev(DAY0 + timedelta(d), "08:05") for d in range(14)))
+    rollover_day(r, DAY0 + timedelta(14))
+    d = routine_to_dict(r)
+    del d["day_slots"]
+    legacy = routine_from_dict(d)
+    for d in range(14, 17):
+        update_on_event(legacy, ev(DAY0 + timedelta(d), "08:05"))
+        rollover_day(legacy, DAY0 + timedelta(d + 1))
+    assert legacy.days_seen == HISTORY_DAYS  # used to collapse to 3
+    assert len(legacy.first_times) == HISTORY_DAYS  # used to grow to 17
+    assert max(legacy.hist) <= legacy.days_seen  # a slot can't be active on more days than seen
+    assert legacy.median_first == 8 * 60 + 5
