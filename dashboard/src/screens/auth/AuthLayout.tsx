@@ -1,23 +1,23 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { auth } from "../../auth/session";
 import { BorderBeam } from "../../components/ui/BorderBeam";
 import { DotPattern } from "../../components/ui/DotPattern";
 import { OrbitingCircles } from "../../components/ui/OrbitingCircles";
 import { BlurFade } from "../../components/ui/motion";
 import { ThemeToggle } from "../../components/ui/ThemeToggle";
+import { config } from "../../config";
 import { FAMILY } from "../../lib/family";
 
 function Mark() {
   return (
-    <Link to="/login" className="flex items-center gap-2 text-ink" aria-label="Saathi">
+    <a href={config.landingUrl} className="flex items-center gap-2 text-ink" aria-label="Saathi home page">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
         {[0, 60, 120].map((r) => (
           <ellipse key={r} cx="12" cy="12" rx="4" ry="10" transform={`rotate(${r} 12 12)`} />
         ))}
       </svg>
       <span className="flare text-[24px] leading-none">saathi</span>
-    </Link>
+    </a>
   );
 }
 
