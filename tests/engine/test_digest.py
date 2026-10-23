@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from backend.common.config import get_settings
 from backend.digest import bedrock, describe_visitor, generate_digest, weekly_trend
 from backend.digest.daily import compute_facts, fallback_digest
 from backend.engine.backfill import read_jsonl
@@ -35,10 +36,12 @@ def fake(monkeypatch):
     def install(reply=None, error=None):
         f = FakeBedrock(reply, error)
         monkeypatch.setenv("BEDROCK_MODEL_ID", "test-model")
+        get_settings.cache_clear()  # Bedrock reads its model id through Settings (L9)
         monkeypatch.setattr(bedrock, "_client", f)
         return f
 
-    return install
+    yield install
+    get_settings.cache_clear()  # don't leak the test model id into later tests
 
 
 # digest -------------------------------------------------------------------------------

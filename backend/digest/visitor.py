@@ -23,7 +23,15 @@ DEFAULT = {
     "caution": False,
     "caution_reason": "",
 }
-_MAGIC = [(b"\xff\xd8\xff", "jpeg"), (b"\x89PNG", "png"), (b"GIF8", "gif"), (b"RIFF", "webp")]
+_MAGIC = [(b"\xff\xd8\xff", "jpeg"), (b"\x89PNG", "png"), (b"GIF8", "gif")]
+
+
+def image_format(data: bytes) -> str | None:
+    """Bedrock image format from magic bytes. "RIFF" alone is also WAV/AVI, so WebP needs
+    "WEBP" at bytes 8-12 (M4)."""
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return next((f for sig, f in _MAGIC if data.startswith(sig)), None)
 
 
 def describe_visitor(image_bytes: bytes) -> dict:
@@ -32,7 +40,7 @@ def describe_visitor(image_bytes: bytes) -> dict:
     `caution` is computed here, not by the model: no uniform/badge and no package. The time
     of day is not part of this signature, so callers can ignore caution outside waking hours.
     """
-    fmt = next((f for sig, f in _MAGIC if image_bytes.startswith(sig)), None)
+    fmt = image_format(image_bytes)
     if fmt is None:
         return dict(DEFAULT)
     content = [

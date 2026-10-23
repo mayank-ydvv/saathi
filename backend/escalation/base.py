@@ -45,6 +45,7 @@ def resolve(
         alert["acked_by"] = {"by": by, "name": name}
         alert["steps"] = [*alert["steps"], {"state": "RESOLVED", "at": at}]
         if store.put_alert(alert, expected_state=previous):
+            store.release_open_alert(alert["home_id"], alert_id)
             return alert, True
     raise RuntimeError(f"could not resolve {alert_id}: concurrent updates")
 

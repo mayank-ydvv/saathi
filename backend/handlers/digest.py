@@ -1,7 +1,8 @@
 """Lambda entry point for the daily 21:00 IST EventBridge schedule: evening digest per home.
 
-The minute tick also sends a digest once a home's `digest_time` passes; whichever runs first
-writes it and the other sees it stored and skips, so a family gets exactly one per day.
+The minute tick also sends a digest once a home's `digest_time` passes. Both go through
+`Scheduler.deliver_digest`, which claims the day with a conditional write first, so a
+family gets exactly one per day even when the two run at the same moment (H5).
 """
 
 from __future__ import annotations
@@ -22,6 +23,6 @@ def handler(event: dict[str, Any] | None = None, context: Any = None) -> dict[st
         home = store.get_home(home_id)
         if home is None or store.get_digest(home_id, day) is not None:
             continue
-        sched.build_digest(home, day, now)
-        sent.append(home_id)
+        if sched.deliver_digest(home, day, now) is not None:
+            sent.append(home_id)
     return {"date": day.isoformat(), "sent": sent}

@@ -1,5 +1,8 @@
 """Spoken nudge for the parent app via Amazon Polly, cached by text hash in the blob store.
 
+Only the blob *key* is cached in memory; the URL is made per request, because on S3 it is a
+presigned URL that expires after an hour (H7).
+
 Voice: "Kajal", neural, en-IN (bilingual en-IN/hi-IN, so LanguageCode is required).
 Verified against the Polly "Available voices" table. Without AWS credentials (local dev) or
 when Polly fails, a pre-recorded clip in `assets/` is served instead.
@@ -36,7 +39,7 @@ class Voice:
         self._store = store
         self._polly = polly
         self._region = region
-        self._urls: dict[str, str] = {}  # text -> url, so repeat polls are O(1)
+        self._keys: dict[str, str] = {}  # text -> stored blob key, so repeat polls are O(1)
         self._lock = Lock()
 
     def _client(self) -> Any | None:
@@ -68,20 +71,25 @@ class Voice:
             log.exception("Polly synthesize_speech failed; using the fallback clip")
             return None
 
-    def audio_url(self, text: str) -> str:
-        """URL of the spoken `text`: cache -> blob store -> Polly -> fallback clip."""
+    def ensure(self, text: str) -> str | None:
+        """Blob key of the spoken `text` (cache -> blob store -> Polly), or None if Polly is
+        unavailable. O(1) once cached."""
         with self._lock:
-            if text in self._urls:
-                return self._urls[text]
+            if text in self._keys:
+                return self._keys[text]
             key = audio_key(text)
-            if self._store.get_blob(key) is not None:
-                url = self._store.blob_url(key)
-            elif (mp3 := self.synthesize(text)) is not None:
-                url = self._store.save_blob(key, mp3, "audio/mpeg")
-            else:
-                return self._fallback_url()  # not cached: retry Polly on the next nudge
-            self._urls[text] = url
-            return url
+            if self._store.get_blob(key) is None:
+                mp3 = self.synthesize(text)
+                if mp3 is None:
+                    return None  # not cached: retry Polly on the next nudge
+                self._store.save_blob(key, mp3, "audio/mpeg")
+            self._keys[text] = key
+            return key
+
+    def audio_url(self, text: str) -> str:
+        """A fresh URL for the spoken `text`, or for the fallback clip."""
+        key = self.ensure(text)
+        return self._store.blob_url(key) if key is not None else self._fallback_url()
 
     def _fallback_url(self) -> str:
         if self._store.get_blob(FALLBACK_KEY) is None:
