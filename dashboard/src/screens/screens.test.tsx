@@ -47,6 +47,14 @@ describe("screens with mock data", () => {
     await userEvent.click(within(banner).getByRole("button", { name: /I'm checking/ }));
     expect(await screen.findByRole("heading", { name: "All normal" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Open alert" })).not.toBeInTheDocument();
+    expect(screen.getByText("Thanks, Family. Everyone can see you're checking.")).toBeInTheDocument();
+  });
+
+  it("Today: the parent's number becomes a Call link", async () => {
+    renderAt("/?mock=green");
+    expect(await screen.findByRole("heading", { name: "All normal" })).toBeInTheDocument();
+    const calls = await screen.findAllByRole("link", { name: "Call Kamala" });
+    expect(calls[0]).toHaveAttribute("href", "tel:+919876543210");
   });
 
   it("the demo switch changes the status in place and keeps it across tabs", async () => {
@@ -93,5 +101,28 @@ describe("screens with mock data", () => {
     expect(await screen.findByRole("img", { name: /^Kitchen: most active around/ })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: /most active around/ })).toHaveLength(4);
     expect(screen.getByText("07:40")).toBeInTheDocument();
+  });
+
+  it("Alerts: the Open filter hides resolved alerts", async () => {
+    renderAt("/alerts?mock=red");
+    expect(await screen.findByText("Resolved by Priya in 16 min")).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("group", { name: "Show alerts" })).getByRole("button", { name: /^Open/ }));
+    expect(screen.queryByText("Resolved by Priya in 16 min")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("list", { name: "Escalation steps" })).toHaveLength(1);
+  });
+
+  it("Visitors: each doorbell ring with its description, strangers flagged", async () => {
+    renderAt("/visitors?mock=green&time=21:30");
+    expect(await screen.findByText("One person in a delivery uniform holding a cardboard box.")).toBeInTheDocument();
+    expect(screen.getAllByText("Caution").length).toBeGreaterThan(0);
+    expect(screen.getByText("No uniform, badge or package visible")).toBeInTheDocument();
+  });
+
+  it("Family: who each step of the ladder reaches", async () => {
+    renderAt("/family?mock=green");
+    const ladder = await screen.findByRole("list", { name: "Who is reached at each step" });
+    expect(await within(ladder).findByText("Mrs Iyer")).toBeInTheDocument();
+    expect(within(ladder).getByText("Priya")).toBeInTheDocument();
+    expect(within(ladder).getAllByText("Kamala").length).toBeGreaterThan(0);
   });
 });

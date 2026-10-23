@@ -65,7 +65,14 @@ def test_home(api):
         "parent_name": "Kamala",
         "city": "Chennai",
         "zones": ["front_door", "kitchen", "living_room", "bedroom"],
+        "contacts": [{"role": "family", "name": "Priya"}, {"role": "neighbour", "name": "Ravi"}],
+        "parent_phone": None,
     }
+
+
+def test_home_parent_phone(api, store, home):
+    store.put_home({**home, "parent_phone": "+91 98765 43210"})
+    assert api.get(f"/homes/{HOME}").json()["parent_phone"] == "+91 98765 43210"
 
 
 def test_unknown_home_is_404_with_string_detail(api):

@@ -17,12 +17,19 @@ export type AlertKind = "late_start" | "long_inactivity" | "night_activity";
 
 export type AckBy = "parent" | "family" | "neighbour";
 
-/** GET /homes/{home_id} */
+export interface Contact {
+  role: "family" | "neighbour";
+  name: string;
+}
+
+/** GET /homes/{home_id} (contacts and parent_phone: accepted additive change, may be absent) */
 export interface Home {
   home_id: string;
   parent_name: string;
   city: string;
   zones: string[];
+  contacts?: Contact[];
+  parent_phone?: string | null;
 }
 
 export interface LastSeen {

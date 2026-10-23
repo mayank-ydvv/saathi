@@ -18,6 +18,16 @@ def home_zones(home: dict[str, Any]) -> list[str]:
     return [z for z in ZONES if z in present]
 
 
+def home_contacts(home: dict[str, Any]) -> list[dict[str, str]]:
+    """Who the ladder reaches, by name only (chat ids stay on the server), family first."""
+    contacts = home.get("contacts") or {}
+    return [
+        {"role": role, "name": str(contacts[role]["name"])}
+        for role in ("family", "neighbour")
+        if (contacts.get(role) or {}).get("name")
+    ]
+
+
 def last_seen(routines: dict[str, dict[str, Any]]) -> dict[str, str] | None:
     """Most recent activity over the zones' routines: O(zones), no event query."""
     best: tuple[str, str] | None = None

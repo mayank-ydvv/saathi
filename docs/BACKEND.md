@@ -30,6 +30,7 @@ How the backend is put together, and the optional settings that are not in `.env
 | `TELEGRAM_WEBHOOK_SECRET` | empty | `secret_token` given to Telegram `setWebhook`; checked on `/telegram/webhook` |
 | `ROUTINES_FILE` | `sandbox/fixtures/routines_home-demo-1.json` | Backfill output loaded by seeding |
 | `FAMILY_NAME`, `NEIGHBOUR_NAME` | `Priya`, `Ravi` | Contact names used in messages and acks |
+| `PARENT_PHONE` | empty | The parent's phone number, stored on the home when seeding; the dashboard shows a "Call" button only when it is set |
 
 ## Design notes
 

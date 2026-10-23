@@ -30,6 +30,11 @@ const HOME: Home = {
   parent_name: "Kamala",
   city: "Chennai",
   zones: ["front_door", "kitchen", "living_room", "bedroom"],
+  contacts: [
+    { role: "family", name: "Priya" },
+    { role: "neighbour", name: "Mrs Iyer" },
+  ],
+  parent_phone: "+91 98765 43210",
 };
 
 /** In yellow / red, nothing has moved for the last 4 h 7 min of today. */

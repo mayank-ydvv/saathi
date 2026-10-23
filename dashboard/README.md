@@ -3,7 +3,23 @@
 The web app a son or daughter opens to see whether their parent is okay today: status, the
 day's timeline, alerts and how they were resolved, the evening digest, and the usual routine.
 
+| Page | What it shows |
+|---|---|
+| **Today** | A status card in the status colour with the parent's photo, the open alert and **I'm checking** inside it, four stat cards, a room-coloured timeline (hover a mark for a tooltip), the latest events and today's doorbell rings |
+| **Alerts** | Totals, open count and average response time; All / Open / Resolved filters; alerts grouped by day with the escalation steps left to right |
+| **Visitors** | Every doorbell ring and parcel for a chosen day, with the snapshot and description; strangers are flagged |
+| **Digest** | The evening digest as a letter, with **Listen** (the browser reads it aloud) and **Copy**, and the last seven days to jump between |
+| **Routine** | Plain-language highlights (usually up by, busiest hour, most-used room), a rooms × hours heatmap and each room's 24-hour chart |
+| **Family** | Who each step of the ladder reaches, by name, and the name sent with "I'm checking" |
+
+Every page ends in a short, collapsible "What does this mean?" note. While an alert is open, phones
+keep an **I'm checking** bar pinned above the tabs, and a toast confirms the acknowledgement.
+When the home has the parent's number (`PARENT_PHONE` when seeding, see docs/BACKEND.md), a
+**Call** button appears on the status card, in the sidebar and on the Family page.
+
 React 18 + Vite + TypeScript (strict) + Tailwind CSS 4 + React Router, tested with Vitest.
+The look is the landing page's warm almanac palette with real hierarchy: Fraunces for headings,
+Alegreya Sans for text, soft shadows on cards, and one colour per room.
 Times use `Intl` in Asia/Kolkata. The per-room routine bars are plain SVG; the stat cards and the
 "typical day" chart use Recharts through a trimmed shadcn/ui chart wrapper, and the animations
 are Magic UI / Aceternity components ported into `src/components/ui/` (each file names its source).
