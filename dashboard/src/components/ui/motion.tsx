@@ -147,14 +147,24 @@ export const AnimatedList = memo(function AnimatedList({
 });
 
 /** Words appear one after another out of a blur, like the digest being written. */
-export function TextGenerate({ words, className, duration = 0.5 }: { words: string; className?: string; duration?: number }) {
+export function TextGenerate({
+  words,
+  className,
+  duration = 0.5,
+  "aria-hidden": ariaHidden,
+}: {
+  words: string;
+  className?: string;
+  duration?: number;
+  "aria-hidden"?: boolean;
+}) {
   const [scope, animate] = useAnimate();
   const list = words.split(" ");
   useEffect(() => {
-    void animate("span", { opacity: 1, filter: "blur(0px)" }, { duration, delay: stagger(0.08) });
+    void animate("span", { opacity: 1, filter: "blur(0px)" }, { duration, delay: stagger(0.035) });
   }, [animate, duration, words]);
   return (
-    <div ref={scope} className={className}>
+    <div ref={scope} className={className} aria-hidden={ariaHidden}>
       {list.map((word, i) => (
         <motion.span key={word + i} className="opacity-0" style={{ filter: "blur(10px)" }}>
           {word}{" "}

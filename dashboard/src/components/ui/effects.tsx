@@ -16,8 +16,9 @@ export function PulsatingButton({
   pulseColor = "color-mix(in oklab, var(--accent) 35%, transparent)",
   duration = "1.6s",
   distance = "10px",
+  pulse = true,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { pulseColor?: string; duration?: string; distance?: string }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { pulseColor?: string; duration?: string; distance?: string; pulse?: boolean }) {
   return (
     <button
       className={cn("relative flex cursor-pointer items-center justify-center", className)}
@@ -25,7 +26,9 @@ export function PulsatingButton({
       {...props}
     >
       <span className="relative z-10 inline-flex items-center gap-2">{children}</span>
-      <span aria-hidden="true" className="animate-pulse-ring pointer-events-none absolute inset-0 rounded-[inherit]" />
+      {pulse ? (
+        <span aria-hidden="true" className="animate-pulse-ring pointer-events-none absolute inset-0 rounded-[inherit]" />
+      ) : null}
     </button>
   );
 }
@@ -35,11 +38,14 @@ export const Ripple = memo(function Ripple({
   mainCircleSize = 120,
   mainCircleOpacity = 0.24,
   numCircles = 5,
+  step = 70,
   className,
 }: {
   mainCircleSize?: number;
   mainCircleOpacity?: number;
   numCircles?: number;
+  /** px added to each ring's diameter (Magic UI uses 70). */
+  step?: number;
   className?: string;
 }) {
   return (
@@ -54,8 +60,8 @@ export const Ripple = memo(function Ripple({
           style={
             {
               "--i": i,
-              width: `${mainCircleSize + i * 70}px`,
-              height: `${mainCircleSize + i * 70}px`,
+              width: `${mainCircleSize + i * step}px`,
+              height: `${mainCircleSize + i * step}px`,
               opacity: mainCircleOpacity - i * 0.04,
               animationDelay: `${i * 0.06}s`,
               top: "50%",

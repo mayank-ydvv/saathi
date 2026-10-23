@@ -3,6 +3,9 @@ import { getTimeline } from "../api/client";
 import type { TimelineEvent } from "../api/types";
 import { AlertBanner } from "../components/AlertBanner";
 import { DayTimeline } from "../components/DayTimeline";
+import { RecentActivity } from "../components/RecentActivity";
+import { TodayStats } from "../components/TodayStats";
+import { BlurFade } from "../components/ui/motion";
 import { StatusCard } from "../components/StatusCard";
 import { Card, ErrorCard, Loading } from "../components/States";
 import { VisitorPanel } from "../components/VisitorPanel";
@@ -47,6 +50,12 @@ export function Today() {
         />
       ) : null}
 
+      {timeline.data ? (
+        <BlurFade delay={0.05}>
+          <TodayStats events={timeline.data.events} zones={home.data?.zones ?? []} />
+        </BlurFade>
+      ) : null}
+
       <Card>
         <div className="mb-4 flex items-baseline justify-between gap-3">
           <h2 className="text-lg font-semibold">Today's activity</h2>
@@ -67,6 +76,13 @@ export function Today() {
           <div role="status" aria-label="Loading the timeline" className="h-52 animate-pulse rounded-xl bg-surface-2" />
         )}
       </Card>
+
+      {timeline.data ? (
+        <Card>
+          <h2 className="mb-4 text-lg font-semibold">Latest</h2>
+          <RecentActivity events={timeline.data.events} />
+        </Card>
+      ) : null}
 
       <VisitorPanel event={visitor} parentName={parentName} onClose={() => setVisitor(null)} />
     </div>
