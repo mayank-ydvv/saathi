@@ -204,6 +204,8 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
+  /* Pull-to-refresh is ours; keep Chrome's native page-level refresh out of the way. */
+  overscroll-behavior-y: contain;
   -webkit-font-smoothing: antialiased;
 }
 

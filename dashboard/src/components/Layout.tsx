@@ -1,5 +1,6 @@
+import { useCallback, useState } from "react";
 import { Activity, BellRing, BookOpen, ChartColumn, DoorOpen, LogOut, Users, type LucideIcon } from "lucide-react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { signOut, useSession } from "../auth/session";
 import { config } from "../config";
 import { useNow } from "../hooks/useNow";
@@ -12,6 +13,8 @@ import { useLive } from "../state/LiveData";
 import { CallLink } from "./CallLink";
 import { DemoSwitch } from "./DemoSwitch";
 import { FamilyName } from "./FamilyName";
+import { PullToRefresh } from "./PullToRefresh";
+import { Toast } from "./Toast";
 import { MobileAckBar } from "./MobileAckBar";
 import { ThemeToggle } from "./ui/ThemeToggle";
 
@@ -33,12 +36,20 @@ function greeting(now: Date): string {
   return "Good evening";
 }
 
-function Tab({ to, label, icon: IconCmp, compact, badge }: (typeof TABS)[number] & { compact?: boolean; badge: number }) {
+function Tab({
+  to,
+  label,
+  icon: IconCmp,
+  compact,
+  badge,
+}: (typeof TABS)[number] & { compact?: boolean; badge: number }) {
   const { search } = useLocation(); // keep ?mock= / ?time= when switching tabs
+  const isActive = !!useMatch({ path: to, end: to === "/" });
   return (
     <NavLink
       to={{ pathname: to, search }}
       end={to === "/"}
+      aria-current={isActive ? "page" : undefined}
       className={({ isActive }) =>
         cn(
           "press relative flex items-center rounded-xl font-medium transition-colors",
@@ -66,7 +77,7 @@ function Tab({ to, label, icon: IconCmp, compact, badge }: (typeof TABS)[number]
 }
 
 export function Layout() {
-  const { home, status, alerts } = useLive();
+  const { home, status, alerts, refreshLive } = useLive();
   const now = useNow(1_000);
   const session = useSession();
   const { search } = useLocation();
@@ -74,6 +85,14 @@ export function Layout() {
   const openCount = alerts.data?.alerts.filter(isOpen).length ?? 0;
   const look = status.data ? statusLook(status.data.status) : null;
   const firstName = session?.name?.trim().split(/\s+/)[0];
+
+  // Pulling the page down on a touch device refetches status + alerts, with a confirmation.
+  const [toast, setToast] = useState(false);
+  const refreshWithToast = useCallback(() => {
+    refreshLive();
+    setToast(true);
+  }, [refreshLive]);
+  const hideToast = useCallback(() => setToast(false), []);
 
   return (
     <div className="min-h-dvh md:flex">
@@ -158,15 +177,19 @@ export function Layout() {
           tabIndex={-1}
           className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-36 outline-none md:px-8 md:pb-12"
         >
-          <Outlet />
-          <div className="mt-10 border-t border-line pt-5 md:hidden">
-            <FamilyName />
-            <div className="mt-3">
-              <AccountRow />
+          <PullToRefresh onRefresh={refreshWithToast}>
+            <Outlet />
+            <div className="mt-10 border-t border-line pt-5 md:hidden">
+              <FamilyName />
+              <div className="mt-3">
+                <AccountRow />
+              </div>
             </div>
-          </div>
+          </PullToRefresh>
         </main>
       </div>
+
+      <Toast message="Updated just now" visible={toast} onDone={hideToast} />
 
       <MobileAckBar />
       <nav

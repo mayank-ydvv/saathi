@@ -56,6 +56,17 @@ Notes written as we build. One section per tool, then the friction log and featu
 - **Needs work:** `npm install` now prints `npm warn allow-scripts esbuild (postinstall …)` and skips esbuild's install script. Vite still works (esbuild's binary comes from its platform package), but the warning doesn't say whether anything is broken. CI uses Node 20 / npm 10, which doesn't have this behaviour, so the two can differ.
 - **Build with it again?** Yes.
 
+### Web Notifications API
+- **Used for:** the escalated-alert push (status turns red → notification, click focuses the tab on Today) and the one-time prompt on the Today screen.
+- **Worked well:** a data-URL SVG icon for the notification means no `public/` asset copied around; permission can be read live off `Notification.permission`, so granting it in one prompt instance lets every other hook instance fire immediately; the `localStorage` flag keeps "Not now" honest.
+- **Needs work:** jsdom has no `Notification` at all, so tests install a fake with a switchable permission (`src/test/fakeNotification.ts`); Safari and iOS support is limited (iOS needs an installed PWA), so the prompt is Chrome/Android-first in practice; permission persists globally, so clearing site data resets the banner.
+- **Build with it again?** Yes.
+
+### Pull-to-refresh (touch events + CSS `overscroll-behavior`)
+- **Used for:** the mobile gesture on every screen (top indicator + "Updated just now" toast).
+- **Worked well:** `overscroll-behavior-y: contain` on `body` keeps Chrome's native page refresh from double-firing; threshold logic is plain px maths on touch events, no library.
+- **Needs work:** jsdom has no `TouchEvent` and no real scroll, so tests dispatch plain `Event("touchmove")` objects with a fake `touches` list and swap `window.scrollY` for a get/set property descriptor they restore afterwards.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |
@@ -66,9 +77,14 @@ Notes written as we build. One section per tool, then the friction log and featu
 | Real-API demo with the backend's demo clock | Ran `fall_day` (backend clock 17:05) and opened the dashboard (device time 00:28) | Timeline now-line at 00:28 and "Last seen: just now" for 13:00 events | Follow `GET /_dev/clock` in real mode; `useNow` re-renders as soon as the first sync lands |
 | Screenshots at 1280 px in an embedded browser pane | Emulated a 1280 px viewport wider than the pane | Captures came out cropped/misplaced (layout itself measured correctly: 240 px nav + 1024 px main) | Took laptop shots at 1024 px; verified 1280 by measuring the DOM |
 | Strict lint in tests | Used `!` non-null assertions in tests | `@typescript-eslint/no-non-null-assertion` (strict preset) fails the lint | A tiny `must()` helper in the tests |
+| Add browser notifications | Called `Notification` directly | jsdom has none, so the hook had to degrade to a no-op and tests needed a fake | `useNotifications` unfailable where the API is missing; a fake stands in under tests |
+| aria-current on the active tab | Tried to set the attribute from NavLink's className render-prop | Render props can style the link but can't set attributes on it | Computed the active state with `useMatch({ path, end })` and set `aria-current` alongside the styling |
+| Keyboard time on 40+ timeline marks | Every mark was tabbable | Tab-stepping through a lane is tedious | Roving tabindex per lane (new `useRovingTabIndex` hook): Tab lands once, arrows walk the marks |
 
 ## Feature requests
 
 | What | Why | Urgency |
 |---|---|---|
 | npm: say clearly whether skipping an install script breaks the package | The `allow-scripts` warning looks like an error to newcomers | nice-to-have |
+| Browsers: one way to detect "notifications possible" | The API is defined-but-denied in some embedded browsers, so "default" isn't always a meaningful prompt state | nice-to-have |
+| Programmable scroll in jsdom | Real `scrollY` (or a scroll container) would let pull-to-refresh and sticky-header tests be physical instead of descriptor-swaps | nice-to-have |

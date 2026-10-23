@@ -1,4 +1,4 @@
-import { ArrowRight, ShieldAlert } from "lucide-react";
+import { ArrowRight, Bell, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getTimeline } from "../api/client";
@@ -14,6 +14,7 @@ import { BlurFade } from "../components/ui/motion";
 import { VisitorPanel } from "../components/VisitorPanel";
 import { VisitorThumb } from "../components/VisitorThumb";
 import { POLL_TIMELINE_MS } from "../config";
+import { useNotifications, NOTIFICATION_DISMISS_KEY } from "../hooks/useNotifications";
 import { useMockVariant } from "../hooks/useMockVariant";
 import { useNow } from "../hooks/useNow";
 import { usePolling } from "../hooks/usePolling";
@@ -35,6 +36,10 @@ export function Today() {
   const parentName = home.data?.parent_name;
   const zones = home.data?.zones ?? ZONE_ORDER;
   const open = activeAlert(status.data, alerts.data?.alerts);
+  const { permission, requestPermission } = useNotifications();
+  const [notifDismissed, setNotifDismissed] = useState(
+    () => window.localStorage.getItem(NOTIFICATION_DISMISS_KEY) === "1",
+  );
   const rings = timeline.data?.events.filter((e) => e.type === "ding") ?? [];
 
   return (
@@ -61,6 +66,38 @@ export function Today() {
           <Block className="h-56 rounded-3xl" />
         </div>
       )}
+
+      {permission === "default" && !notifDismissed ? (
+        <aside
+          role="note"
+          aria-label="Notification prompt"
+          className="flex flex-col gap-3 rounded-3xl border border-line bg-surface-2 px-4 py-3 text-sm sm:flex-row sm:items-center"
+        >
+          <p className="flex min-w-0 flex-1 items-center gap-2 font-medium">
+            <Bell className="size-5 shrink-0 text-muted" aria-hidden="true" />
+            Enable notifications to be alerted when something needs attention.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void requestPermission()}
+              className="press min-h-10 rounded-xl bg-accent px-4 font-semibold text-[15px] text-accent-ink"
+            >
+              Enable
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                window.localStorage.setItem(NOTIFICATION_DISMISS_KEY, "1");
+                setNotifDismissed(true);
+              }}
+              className="press min-h-10 rounded-xl border border-line px-4 font-medium text-[15px] text-muted hover:bg-surface hover:text-ink"
+            >
+              Not now
+            </button>
+          </div>
+        </aside>
+      ) : null}
 
       {timeline.data ? (
         <BlurFade delay={0.05}>

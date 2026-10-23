@@ -4,6 +4,8 @@ import type { TimelineEvent } from "../api/types";
 import { eventTypeLabel, zoneLabel } from "../lib/labels";
 import { dayPercent, groupIntoLanes, isVisitorEvent, ZONE_ORDER } from "../lib/timeline";
 import { formatTimeIST } from "../lib/time";
+import type { RovingHandles } from "../hooks/useRovingTabIndex";
+import { useRovingTabIndex } from "../hooks/useRovingTabIndex";
 import { zoneColour, zoneTint } from "../lib/zones";
 
 const HOURS = [0, 6, 12, 18, 24];
@@ -96,6 +98,7 @@ function Lane({
   onPick: (e: TimelineEvent) => void;
   onVisitor: (e: TimelineEvent) => void;
 }) {
+  const roving = useRovingTabIndex(events.length);
   const mine = picked && picked.zone === zone ? picked : null;
   return (
     <>
@@ -122,8 +125,15 @@ function Lane({
             aria-hidden="true"
           />
         ))}
-        {events.map((e) => (
-          <Mark key={e.event_id} event={e} active={mine?.event_id === e.event_id} onPick={onPick} onVisitor={onVisitor} />
+        {events.map((e, index) => (
+          <Mark
+            key={e.event_id}
+            event={e}
+            roving={roving[index]}
+            active={mine?.event_id === e.event_id}
+            onPick={onPick}
+            onVisitor={onVisitor}
+          />
         ))}
         {nowPct !== null ? (
           <span
@@ -149,11 +159,13 @@ function Lane({
 
 function Mark({
   event,
+  roving,
   active,
   onPick,
   onVisitor,
 }: {
   event: TimelineEvent;
+  roving?: RovingHandles;
   active: boolean;
   onPick: (e: TimelineEvent) => void;
   onVisitor: (e: TimelineEvent) => void;
@@ -167,9 +179,15 @@ function Mark({
     return (
       <button
         type="button"
+        ref={roving?.ref}
+        tabIndex={roving?.tabIndex}
         aria-label={label}
         onMouseEnter={() => onPick(event)}
-        onFocus={() => onPick(event)}
+        onFocus={() => {
+          roving?.onFocus();
+          onPick(event);
+        }}
+        onKeyDown={(e) => roving?.onKeyDown(e)}
         onClick={() => onVisitor(event)}
         className={`absolute top-1/2 z-10 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-surface text-white shadow-card transition hover:scale-110 ${
           caution ? "bg-bad-solid" : ""
@@ -184,9 +202,15 @@ function Mark({
   return (
     <button
       type="button"
+      ref={roving?.ref}
+      tabIndex={roving?.tabIndex}
       aria-label={label}
       onMouseEnter={() => onPick(event)}
-      onFocus={() => onPick(event)}
+      onFocus={() => {
+        roving?.onFocus();
+        onPick(event);
+      }}
+      onKeyDown={(e) => roving?.onKeyDown(e)}
       onClick={() => onPick(event)}
       className={`absolute top-1/2 h-7 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full transition ${
         active ? "scale-y-125 opacity-100" : "opacity-80 hover:opacity-100"

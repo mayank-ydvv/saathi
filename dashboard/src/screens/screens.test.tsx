@@ -1,9 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppRoutes } from "../App";
 import { StatusCard } from "../components/StatusCard";
+import { NOTIFICATION_DISMISS_KEY } from "../hooks/useNotifications";
+import { installFakeNotification, type FakeNotification } from "../test/fakeNotification";
 
 function renderAt(path: string) {
   window.history.replaceState(null, "", path); // the mock reads ?mock= from the page URL
@@ -123,5 +125,47 @@ describe("screens with mock data", () => {
     expect(await within(ladder).findByText("Mrs Iyer")).toBeInTheDocument();
     expect(within(ladder).getByText("Priya")).toBeInTheDocument();
     expect(within(ladder).getAllByText("Kamala").length).toBeGreaterThan(0);
+  });
+});
+
+describe("Notification prompt on Today", () => {
+  let fake: FakeNotification;
+
+  beforeEach(() => fake = installFakeNotification("default"));
+  afterEach(() => fake.uninstall());
+
+  it("prompts while permission is default, and Enable asks for it", async () => {
+    renderAt("/?mock=green");
+    const prompt = await screen.findByRole("note", { name: "Notification prompt" });
+    expect(fake.requestPermission).not.toHaveBeenCalled();
+    await userEvent.click(within(prompt).getByRole("button", { name: "Enable" }));
+    expect(fake.requestPermission).toHaveBeenCalledOnce();
+    expect(await screen.findByRole("heading", { name: "All normal" })).toBeInTheDocument();
+    expect(screen.queryByRole("note", { name: "Notification prompt" })).not.toBeInTheDocument();
+  });
+
+  it("Not now dismisses it for the session and on the next visit", async () => {
+    renderAt("/?mock=green");
+    const prompt = await screen.findByRole("note", { name: "Notification prompt" });
+    await userEvent.click(within(prompt).getByRole("button", { name: "Not now" }));
+    expect(screen.queryByRole("note", { name: "Notification prompt" })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(NOTIFICATION_DISMISS_KEY)).toBe("1");
+
+    // A fresh mount reads the remembered flag and stays quiet.
+    renderAt("/?mock=green");
+    expect(await screen.findByRole("heading", { name: "All normal" })).toBeInTheDocument();
+    expect(screen.queryByRole("note", { name: "Notification prompt" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Current page for screen readers", () => {
+  it("nav links announce the current page with aria-current", () => {
+    renderAt("/alerts?mock=green");
+    for (const link of screen.getAllByRole("link", { name: "Alerts" })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+    for (const link of screen.getAllByRole("link", { name: "Today" })) {
+      expect(link).not.toHaveAttribute("aria-current");
+    }
   });
 });

@@ -5,6 +5,13 @@ import { zoneColour } from "../lib/zones";
 
 const HOURS = [0, 6, 12, 18, 24];
 
+/** "07:45" for slot 31 (96 fifteen-minute slots, 24-hour clock). */
+function slotTime(slot: number): string {
+  const hour = Math.floor(slot / 4);
+  const minute = (slot % 4) * 15;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 /**
  * 24-hour activity from the 96-slot histogram as plain SVG: one bar per 15 minutes, height =
  * share of learned days the slot was active. Labels are HTML so they stay readable at any width.
@@ -42,7 +49,11 @@ export function RoutineChart({ zone }: { zone: RoutineZone }) {
                 rx={0.3}
                 fill={zoneColour(zone.zone)}
                 opacity={0.35 + 0.65 * (count / max)}
-              />
+              >
+                <title>
+                  {`${slotTime(slot)}–${slotTime(slot + 1)}: active on ${count} of ${zone.days_seen} days`}
+                </title>
+              </rect>
             );
           })}
         </svg>
