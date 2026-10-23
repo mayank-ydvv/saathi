@@ -21,12 +21,12 @@ on Ring") and each member's build prompt. Tick items off here as they land.
 | README, architecture diagram, FEEDBACK.md, demo script, Devpost text | `README.md`, `docs/` |
 | Local end-to-end run of every scenario | `docs/E2E_RESULTS.md` |
 
-## Can be done now (no accounts needed)
+## Could be done without accounts (all done)
 
-- [ ] **Engine bug:** a stored routine without `day_slots` drifts after rollover (`days_seen` resets while `hist` / `first_times` keep growing past 14). Raised in the #6 review, still open. Owner: Krishnaditya (fixing for him).
-- [ ] **CI:** the frontend jobs only run `npm run build`; also run `npm run lint` and `npm test` (dashboard 54 tests, parent app tests). Owner: Mayank.
-- [ ] **README:** the features table still says the family dashboard is "not in `main` yet", and Quick start doesn't say how to run it. Owner: Debadrita (fixing for her).
-- [ ] **FEEDBACK.md:** missing the dashboard's tools (React Router, Testing Library/jsdom, npm 11) from `docs/feedback/anushka.md`. Owner: Debadrita (fixing for her).
+- [x] **Engine bug** (fixed in #30): a stored routine without `day_slots` drifts after rollover (`days_seen` resets while `hist` / `first_times` keep growing past 14). Raised in the #6 review, still open. Owner: Krishnaditya (fixing for him).
+- [x] **CI** (#32): the frontend jobs only run `npm run build`; also run `npm run lint` and `npm test` (dashboard 54 tests, parent app tests). Owner: Mayank.
+- [x] **README** (#33): the features table still says the family dashboard is "not in `main` yet", and Quick start doesn't say how to run it. Owner: Debadrita (fixing for her).
+- [x] **FEEDBACK.md** (#34): missing the dashboard's tools (React Router, Testing Library/jsdom, npm 11) from `docs/feedback/anushka.md`. Owner: Debadrita (fixing for her).
 
 ## Needs your accounts, money or a decision
 
