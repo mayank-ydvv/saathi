@@ -26,6 +26,7 @@ from backend.common.timeutil import (
     parse_iso,
     to_iso,
 )
+from backend.engine.anomaly import LATE_START_ZONES
 from backend.engine.models import Anomaly, EngineConfig
 from backend.escalation.alerts import open_alert
 from backend.escalation.base import Escalator
@@ -113,7 +114,7 @@ class Scheduler:
         return self.build_digest(home, day, now)
 
     def build_digest(self, home: dict[str, Any], day: date, now: datetime) -> dict[str, Any]:
-        """Collect the day's events + alerts, write the digest, store it, notify. O(k)."""
+        """Collect the day's events + alerts, write the digest + weekly trend, store, notify."""
         home_id = home["home_id"]
         start, end = local_day_bounds(day)
         events = [event_from_dict(e) for e in self.store.query_events(home_id, start, end)]
@@ -127,6 +128,10 @@ class Scheduler:
         except Exception:  # generate_digest has its own Bedrock fallback; this is a last resort
             log.exception("generate_digest failed")
             text = f"{home.get('parent_name', 'Your parent')}: {len(events)} events recorded today."
+        routines = self.store.get_routines(home_id)
+        for zone in sorted(LATE_START_ZONES & routines.keys()):  # where the day starts
+            if trend := engine.weekly_trend(engine.routine_from_dict(routines[zone])):
+                text += f" {trend}."
         record = self.store.put_digest(home_id, day, text, to_iso(now))
         if self.on_digest is not None:
             try:

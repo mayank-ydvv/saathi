@@ -100,3 +100,13 @@ def test_digest_not_resent_after_restart(sched, learned, settings):
     sched.tick(at(TODAY, "21:00"))
     fresh = Scheduler(learned, settings, ImmediateEscalator(learned))
     assert fresh.tick(at(TODAY, "21:05")).digests == []
+
+
+def test_digest_mentions_weekly_trend_for_day_start_zones(sched, learned):
+    for zone, firsts in [("bedroom", [420] * 7 + [460] * 7), ("front_door", [400] * 7 + [480] * 7)]:
+        r = engine.routine_from_dict(learned.get_routine(HOME, zone))
+        r.first_times = firsts
+        learned.put_routine(engine.routine_to_dict(r))
+    (digest,) = sched.tick(at(TODAY, "21:00")).digests
+    assert digest["text"].endswith(" Waking about 40 minutes later this week.")
+    assert "front door" not in digest["text"].lower()  # trends only where the day starts
