@@ -18,6 +18,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "mangum>=0.17",
     "ring-sandbox[server]>=0.5.0",
+    "cryptography>=43",  # Cognito id-token signature check (backend/api/auth.py)
 ]
 
 [project.optional-dependencies]

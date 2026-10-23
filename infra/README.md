@@ -30,9 +30,17 @@ sam deploy --guided       # first time: stack name saathi, region us-east-1, ans
 `sam deploy --guided` stores your answers in `infra/samconfig.toml` (git-ignored, because it can
 hold the NoEcho values you typed). Later deploys are just `sam build && sam deploy`.
 
-Parameters: `RingWebhookHmacKey` (required), `RingApiBase`, `RingToken`, `TelegramBotToken`,
+Parameters: `RingWebhookHmacKey` (required), `ParentDeviceToken` (required, 16+ characters:
+the parent app sends it as `VITE_DEVICE_TOKEN`), `FamilyEmails` (comma-separated: the only
+accounts allowed to read the home), `AllowedOrigins` (the deployed dashboard, parent app and
+landing origins for CORS), `RingApiBase`, `RingToken`, `TelegramBotToken`,
 `TelegramWebhookSecret`, `TelegramFamilyChatId`, `TelegramNeighbourChatId`, `BedrockModelId`,
-`DemoMode` (`true` = 10/15/20 s ladder waits), `AlertEmail` (optional SNS email subscription).
+`DemoMode` (default `false`; `true` = 10/15/20 s ladder waits for filming, nothing else),
+`AlertEmail` (optional SNS email subscription).
+
+The API checks every request: the dashboard sends the family member's Cognito id token, the
+parent tablet its device token. After the first deploy, re-run `scripts/seed_home.py` with
+`FAMILY_EMAILS` set so the home record lists who may read it.
 
 Check it's up:
 

@@ -22,6 +22,15 @@ HISTORY_DAYS = 14
 # vehicle events are stored but aren't evidence the parent is up.
 ENGINE_EVENT_TYPES = frozenset({"motion.human", "motion", "ding"})
 
+DEFAULT_CORS_ORIGINS = (
+    "http://localhost:5173",  # dashboard
+    "http://localhost:5174",  # parent app
+    "http://localhost:5175",  # landing page
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+)
+
 # Short ladder waits used when DEMO_MODE=true (contract 4.4: 10–20 s each).
 DEMO_WAITS = {"SUSPECT": 10, "NUDGE_PARENT": 15, "ALERT_FAMILY": 20}
 
@@ -50,12 +59,14 @@ class Settings:
     aws_region: str = "us-east-1"
     ring_api_base: str = "http://localhost:8787"
     ring_token: str = "dummy"
-    ring_webhook_hmac_key: str = "change-me"
+    # No default (M11): an unset key would accept forged Ring events. create_app refuses to start.
+    ring_webhook_hmac_key: str = ""
     telegram_bot_token: str = ""
     telegram_family_chat_id: str = ""
     telegram_neighbour_chat_id: str = ""
     bedrock_model_id: str = ""
-    demo_mode: bool = True
+    # Off unless asked for (C3): demo mode mounts /_dev and shrinks the ladder waits.
+    demo_mode: bool = False
     esc_wait_suspect: int = 300
     esc_wait_nudge: int = 300
     esc_wait_family: int = 600
@@ -75,6 +86,16 @@ class Settings:
     routines_file: str = "sandbox/fixtures/routines_home-demo-1.json"
     family_name: str = "Priya"
     neighbour_name: str = "Ravi"
+    # Browser origins allowed by CORS (C6); the dashboard, parent app and landing page.
+    cors_origins: list[str] = field(default_factory=lambda: list(DEFAULT_CORS_ORIGINS))
+    # API authentication (C1/C2). "off" for local demos; "cognito" checks the family's
+    # Cognito id token and the parent tablet's device token on every data route.
+    auth_mode: str = "off"
+    cognito_user_pool_id: str = ""
+    cognito_client_id: str = ""
+    parent_device_token: str = ""
+    # Who may read a home (lower-cased emails), written onto the home record by seeding.
+    family_emails: list[str] = field(default_factory=list)
 
     @property
     def waits(self) -> dict[str, int]:
@@ -127,7 +148,25 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
         routines_file=env.get("ROUTINES_FILE", d.routines_file),
         family_name=env.get("FAMILY_NAME", d.family_name),
         neighbour_name=env.get("NEIGHBOUR_NAME", d.neighbour_name),
+        cors_origins=_list(env.get("CORS_ORIGINS"), list(DEFAULT_CORS_ORIGINS)),
+        auth_mode=env.get("AUTH_MODE", d.auth_mode).strip().lower(),
+        cognito_user_pool_id=env.get("COGNITO_USER_POOL_ID", ""),
+        cognito_client_id=env.get("COGNITO_CLIENT_ID", ""),
+        parent_device_token=env.get("PARENT_DEVICE_TOKEN", ""),
+        family_emails=[e.lower() for e in _list(env.get("FAMILY_EMAILS"), [])],
     )
+
+
+def check_settings(s: Settings) -> None:
+    """Refuse to start with settings that would leave the API open (M11, C1). O(1)."""
+    if not s.ring_webhook_hmac_key:
+        raise RuntimeError(
+            "RING_WEBHOOK_HMAC_KEY is not set: refusing to accept unsigned Ring events"
+        )
+    if s.auth_mode not in {"off", "cognito"}:
+        raise RuntimeError(f"unknown AUTH_MODE={s.auth_mode!r}; use off or cognito")
+    if s.auth_mode == "cognito" and not (s.cognito_user_pool_id and s.cognito_client_id):
+        raise RuntimeError("AUTH_MODE=cognito needs COGNITO_USER_POOL_ID and COGNITO_CLIENT_ID")
 
 
 @lru_cache(maxsize=1)
