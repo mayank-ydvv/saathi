@@ -305,6 +305,9 @@ Resources:
                 - !GetAtt EventsTable.Arn
                 - !GetAtt AlertsTable.Arn
                 - !GetAtt HomesTable.Arn
+            - Effect: Allow  # the weekly trend reads the routines (one BatchGetItem)
+              Action: [dynamodb:BatchGetItem]
+              Resource: !GetAtt RoutineTable.Arn
             - Effect: Allow
               Action: [s3:GetObject, s3:PutObject]
               Resource: !Sub ${BlobBucket.Arn}/*
