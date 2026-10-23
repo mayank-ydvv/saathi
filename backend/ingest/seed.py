@@ -73,6 +73,7 @@ def build_home(
             "home_id": DEMO_HOME_ID,
             "parent_name": home.get("parent_name", "Kamala"),
             "city": home.get("city", "Chennai"),
+            "parent_phone": home.get("parent_phone") or settings.parent_phone,
             "devices": {d.id: z for d in devices if (z := zone_for(d))},
             "contacts": {
                 "family": {

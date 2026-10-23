@@ -9,6 +9,7 @@ This is the team's single source of truth. Everyone codes against these contract
 | `Routine.day_slots: list[list[int]]` (last field, default `[]`) | Lets the day that leaves the 14-day window be subtracted from `hist` without a scan | PR #6 review |
 | The engine counts only `motion.human`, `motion` and `ding` as activity; `package` and `vehicle` are stored but ignored | A passing car or a parcel isn't evidence that the parent is up | PR #6 review |
 | `Routine.fired: dict[str, str]` (anomaly kind -> local ISO date it last fired, default `{}`) | Each anomaly kind fires at most once a local day; callers persist routines after a check that returned one | PR #8 |
+| `GET /homes/{home_id}` also returns `contacts: [{"role": "family" \| "neighbour", "name": str}]` and `parent_phone: str \| null` (both additive) | The dashboard's Family page names who each escalation step reaches, and "Call" dials the parent | dashboard refined-warm PR |
 
 ## 4. SHARED CONTRACTS (everyone codes against these — do not change them)
 
