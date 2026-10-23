@@ -110,3 +110,14 @@ def test_digest_mentions_weekly_trend_for_day_start_zones(sched, learned):
     (digest,) = sched.tick(at(TODAY, "21:00")).digests
     assert digest["text"].endswith(" Waking about 40 minutes later this week.")
     assert "front door" not in digest["text"].lower()  # trends only where the day starts
+
+
+def test_digest_still_sent_when_the_trend_step_fails(sched, learned, monkeypatch):
+    def denied(home_id):
+        raise RuntimeError("AccessDenied: dynamodb:BatchGetItem")
+
+    monkeypatch.setattr(learned, "get_routines", denied)
+    home = learned.get_home(HOME)
+    digest = sched.build_digest(home, TODAY, at(TODAY, "21:00"))  # what the 21:00 Lambda calls
+    assert "Kamala" in digest["text"]
+    assert learned.get_digest(HOME, TODAY) == digest
