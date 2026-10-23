@@ -117,11 +117,14 @@ export function Layout() {
 
 function Wordmark() {
   return (
-    <p className="flex items-center gap-2 text-xl font-bold tracking-tight">
-      <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent text-accent-ink">
-        <Icon name="shield" className="h-4.5 w-4.5" />
-      </span>
-      Saathi
+    // Same mark as the landing page nav: three-petal outline + lowercase "saathi".
+    <p className="flex items-center gap-2 text-ink">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+        {[0, 60, 120].map((r) => (
+          <ellipse key={r} cx="12" cy="12" rx="4" ry="10" transform={`rotate(${r} 12 12)`} />
+        ))}
+      </svg>
+      <span className="flare text-[24px] leading-none">saathi</span>
     </p>
   );
 }
