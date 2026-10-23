@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [dashboard, parent-app]
+        app: [dashboard, parent-app, landing]
     steps:
       - uses: actions/checkout@v4
       - name: Check for package.json
