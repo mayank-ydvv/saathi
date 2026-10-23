@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { signOut, useSession } from "../auth/session";
 import { config } from "../config";
 import { useNow } from "../hooks/useNow";
 import { formatDateIST, formatTimeIST } from "../lib/time";
@@ -6,6 +7,7 @@ import { useLive } from "../state/LiveData";
 import { DemoSwitch } from "./DemoSwitch";
 import { FamilyName } from "./FamilyName";
 import { Icon, type IconName } from "./Icon";
+import { ThemeToggle } from "./ui/ThemeToggle";
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: "/", label: "Today", icon: "today" },
@@ -54,8 +56,9 @@ export function Layout() {
             <Tab key={t.to} {...t} />
           ))}
         </nav>
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-3">
           <FamilyName />
+          <AccountRow />
         </div>
       </aside>
 
@@ -86,6 +89,9 @@ export function Layout() {
               </time>
               <p className="text-xs text-muted">IST{config.useMock ? " · demo data" : ""}</p>
             </div>
+            <div className="w-full md:hidden">
+              <AccountRow />
+            </div>
           </div>
         </header>
 
@@ -111,6 +117,30 @@ export function Layout() {
           <Tab key={t.to} {...t} compact />
         ))}
       </nav>
+    </div>
+  );
+}
+
+/** Who is signed in, the theme toggle and "Sign out". */
+function AccountRow() {
+  const session = useSession();
+  const navigate = useNavigate();
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted md:border-t md:pt-3">
+      <span className="min-w-0 flex-1 truncate" title={session?.email}>
+        {session?.email}
+      </span>
+      <ThemeToggle />
+      <button
+        type="button"
+        onClick={() => {
+          void signOut();
+          navigate("/login", { replace: true });
+        }}
+        className="rounded-lg px-2 py-1 text-ink hover:bg-surface-2"
+      >
+        Sign out
+      </button>
     </div>
   );
 }

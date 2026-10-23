@@ -1,4 +1,5 @@
 import { getRoutine } from "../api/client";
+import { DayAreaChart } from "../components/DayAreaChart";
 import { RoutineChart } from "../components/RoutineChart";
 import { Card, ErrorCard, Loading, PageTitle } from "../components/States";
 import { useTitle } from "../hooks/useTitle";
@@ -26,6 +27,11 @@ export function Routine() {
               Learning your parent's routine ({daysSeen} of {WINDOW_DAYS} days)
             </p>
           ) : null}
+          <Card>
+            <h2 className="mb-1 text-lg font-semibold">A typical day</h2>
+            <p className="mb-4 text-sm text-muted">How often each room is busy at each hour, across the days Saathi has learned.</p>
+            <DayAreaChart zones={routine.data.zones} />
+          </Card>
           <div className="grid gap-4 lg:grid-cols-2">
             {routine.data.zones.map((z) => (
               <Card key={z.zone}>

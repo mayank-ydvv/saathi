@@ -2,6 +2,7 @@ import type { Status } from "../api/types";
 import { statusLook, zoneLabel } from "../lib/labels";
 import { timeAgo } from "../lib/time";
 import { Icon } from "./Icon";
+import { Ripple } from "./ui/effects";
 
 /** Big status card: icon + word + colour (never colour alone), announced politely. */
 export function StatusCard({ status, now }: { status: Status; now: Date }) {
@@ -10,12 +11,14 @@ export function StatusCard({ status, now }: { status: Status; now: Date }) {
   return (
     <section
       aria-labelledby="status-heading"
-      className={`rounded-3xl p-6 shadow-card md:p-8 ${look.tone}`}
+      className={`overflow-hidden rounded-3xl p-6 shadow-card md:p-8 ${look.tone}`}
       data-status={status.status}
     >
       <div aria-live="polite" aria-atomic="true" className="flex items-start gap-4">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/60 dark:bg-black/20">
-          <Icon name={look.icon} className="h-8 w-8" />
+        <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/60 dark:bg-black/20">
+          {/* Needs attention: rings breathe out of the icon (Magic UI ripple). */}
+          {status.status === "red" ? <Ripple mainCircleSize={60} step={26} numCircles={4} className="overflow-visible text-bad-dot" /> : null}
+          <Icon name={look.icon} className="relative h-8 w-8" />
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold uppercase tracking-wide opacity-80">Today</p>

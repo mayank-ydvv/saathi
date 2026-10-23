@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getDigest } from "../api/client";
 import { Icon } from "../components/Icon";
 import { Card, Empty, ErrorCard, Loading, PageTitle } from "../components/States";
+import { TextGenerate } from "../components/ui/motion";
 import { useTitle } from "../hooks/useTitle";
 import { usePolling } from "../hooks/usePolling";
 import { useNow } from "../hooks/useNow";
@@ -53,7 +54,14 @@ export function Digest() {
       {digest.data ? (
         <Card className="md:p-8">
           <p className="text-sm font-semibold text-muted">{label}</p>
-          <p className="mt-3 max-w-prose text-[18px] leading-relaxed">{digest.data.text}</p>
+          {/* Words appear as if being written (Aceternity text generate); screen readers get it whole. */}
+          <p className="sr-only">{digest.data.text}</p>
+          <TextGenerate
+            key={digest.data.date}
+            words={digest.data.text}
+            className="mt-3 max-w-prose text-[18px] leading-relaxed"
+            aria-hidden
+          />
           <p className="mt-4 text-sm text-muted">Written at {formatTimeIST(digest.data.generated_at)}</p>
         </Card>
       ) : digest.error?.kind === "not_found" ? (

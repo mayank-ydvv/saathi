@@ -4,7 +4,27 @@ The web app a son or daughter opens to see whether their parent is okay today: s
 day's timeline, alerts and how they were resolved, the evening digest, and the usual routine.
 
 React 18 + Vite + TypeScript (strict) + Tailwind CSS 4 + React Router, tested with Vitest.
-No chart, date or state libraries: charts are plain SVG, times use `Intl` in Asia/Kolkata.
+Times use `Intl` in Asia/Kolkata. The per-room routine bars are plain SVG; the stat cards and the
+"typical day" chart use Recharts through a trimmed shadcn/ui chart wrapper, and the animations
+are Magic UI / Aceternity components ported into `src/components/ui/` (each file names its source).
+
+## Family login
+
+Everything except the login screens sits behind a login. Family members sign up with their name,
+email and a password (8+ characters with a lowercase letter and a number), type the 6-digit
+code from the verification email, and then log in. "Forgot password?" emails a reset code. The
+logged-in name is the one sent with "I'm checking", and the session survives a refresh (tokens
+are renewed with the refresh token).
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VITE_COGNITO_REGION` | empty | AWS region of the user pool (stack output `CognitoRegion`) |
+| `VITE_COGNITO_CLIENT_ID` | empty | App client id (stack output `FamilyUserPoolClientId`) |
+
+With both set, the screens call **Amazon Cognito** directly (`src/auth/cognito.ts`), and Cognito
+sends the verification and reset emails. With them empty you get **demo sign-in**: accounts live
+in this browser's localStorage, the code is shown on screen instead of emailed, and the login
+card says so.
 
 ## Run it
 

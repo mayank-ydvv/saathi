@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Phone } from "../components/Phone";
+import { useRef, type CSSProperties } from "react";
+import { Iphone } from "../components/ui/Iphone";
 import { SectionHeading } from "../components/Reveal";
 import { easeOut, seg, useScrollProgress } from "../lib/motion";
 import { img, ma, nightDoor, papa, type Photo } from "../photos";
@@ -71,30 +71,27 @@ export function Guardian() {
             }}
             className={`w-[42%] max-w-[230px] will-change-transform sm:w-[27%] ${i === 2 ? "hidden sm:block" : ""}`}
           >
-            <Phone dark>
-              <img
-                src={img(c.photo, 520)}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{ objectPosition: c.photo.focus }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/80" />
-              <div className="absolute inset-x-0 top-[2.6em] text-center text-[0.5em] uppercase tracking-[0.12em] text-white/80">
-                Saathi
-              </div>
-              <div className="absolute inset-x-0 bottom-0 px-[0.9em] pb-[1.1em] text-center text-white">
-                <div className="text-[0.48em] uppercase tracking-[0.12em] opacity-75">{c.kind}</div>
-                <p className="flare mt-[0.4em] text-[0.82em] leading-[1.1]">{c.insight}</p>
-                <div className="mt-[0.9em] flex justify-center gap-[1.4em]">
-                  {c.stats.map(([v, k]) => (
-                    <div key={k}>
-                      <div className="text-[0.62em]">{v}</div>
-                      <div className="text-[0.42em] uppercase opacity-70">{k}</div>
-                    </div>
-                  ))}
+            {/* Magic UI iPhone mockup with a dark frame; the insight sits on the screen. */}
+            <Iphone src={img(c.photo, 520)} style={{ "--iphone-frame": "#1c1c1e" } as CSSProperties}>
+              <div className="absolute inset-0" style={{ fontSize: "6.4cqw" }}>
+                <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/80" />
+                <div className="absolute inset-x-0 top-[3.2em] text-center text-[0.5em] uppercase tracking-[0.12em] text-white/80">
+                  Saathi
+                </div>
+                <div className="absolute inset-x-0 bottom-0 px-[0.9em] pb-[1.3em] text-center text-white">
+                  <div className="text-[0.48em] uppercase tracking-[0.12em] opacity-75">{c.kind}</div>
+                  <p className="flare mt-[0.4em] text-[0.82em] leading-[1.1]">{c.insight}</p>
+                  <div className="mt-[0.9em] flex justify-center gap-[1.4em]">
+                    {c.stats.map(([v, k]) => (
+                      <div key={k}>
+                        <div className="text-[0.62em]">{v}</div>
+                        <div className="text-[0.42em] uppercase opacity-70">{k}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </Phone>
+            </Iphone>
           </div>
         ))}
       </div>

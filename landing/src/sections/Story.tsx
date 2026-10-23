@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
+import { WordRotate } from "../components/ui/WordRotate";
 import { DigestScreen, FamilyGridScreen } from "../components/Screens";
 import { DASHBOARD_URL } from "../config";
 import { easeInOut, easeOut, lerp, seg, useScrollProgress } from "../lib/motion";
@@ -217,7 +218,8 @@ export function Story() {
           <div className="relative flex h-full flex-col px-4 pb-4 pt-5 text-white sm:px-[34px]">
             <div className="max-w-[420px] pt-14 sm:pt-[72px]">
               <h1 className="flare text-[40px] sm:text-heading">
-                When your parents live far away, let Saathi keep watch.
+                When your parents live far away, let Saathi{" "}
+                <WordRotate words={["keep watch.", "check in.", "call for help."]} duration={2600} />
               </h1>
               <p className="mt-4 max-w-[340px] text-body">
                 Saathi (“saa-thee”, Hindi for companion) learns your parent’s daily rhythm from the

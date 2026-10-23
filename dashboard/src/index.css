@@ -27,8 +27,10 @@
   --shadow: none;
 }
 
+/* Dark follows the system unless the theme toggle put `light` or `dark` on <html> (lib/theme). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
+    color-scheme: dark;
     --canvas: #141f25;
     --surface: #192830;
     --surface-2: #22343d;
@@ -48,6 +50,28 @@
     --bad-dot: #d9775f;
     --shadow: none;
   }
+}
+
+:root.dark {
+  color-scheme: dark;
+  --canvas: #141f25;
+  --surface: #192830;
+  --surface-2: #22343d;
+  --ink: #f5f5ee;
+  --muted: #b8bcb0;
+  --line: #2c3e47;
+  --accent: #f5f5ee;
+  --accent-ink: #192830;
+  --ok-bg: #1f2e22;
+  --ok-ink: #cfe0c2;
+  --ok-dot: #8fae78;
+  --warn-bg: #33290f;
+  --warn-ink: #ecd7a2;
+  --warn-dot: #d1a24b;
+  --bad-bg: #3a1f19;
+  --bad-ink: #f1c2b4;
+  --bad-dot: #d9775f;
+  --shadow: none;
 }
 
 @theme inline {
@@ -84,6 +108,52 @@
   --radius-3xl: 6px;
   --shadow-sm: none;
   --shadow-2xl: none;
+}
+
+/*
+ * Magic UI keyframes (orbiting circles, ripple, pulsating button). `inline` so the per-element
+ * --duration/--i/--angle are read where the class is used, not once on :root.
+ */
+@theme inline {
+  --animate-orbit: orbit calc(var(--duration) * 1s) linear infinite;
+  --animate-ripple: ripple var(--duration, 2.4s) ease calc(var(--i, 0) * 0.2s) infinite;
+  --animate-pulse-ring: pulse-ring var(--duration) ease-out infinite;
+
+  @keyframes orbit {
+    0% {
+      transform: rotate(calc(var(--angle) * 1deg)) translateY(calc(var(--radius) * 1px)) rotate(calc(var(--angle) * -1deg));
+    }
+    100% {
+      transform: rotate(calc(var(--angle) * 1deg + 360deg)) translateY(calc(var(--radius) * 1px))
+        rotate(calc((var(--angle) * -1deg) - 360deg));
+    }
+  }
+  @keyframes ripple {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+  /* Renamed from Magic UI's "pulse" so it doesn't replace Tailwind's animate-pulse skeletons. */
+  @keyframes pulse-ring {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    50% {
+      box-shadow: 0 0 0 var(--distance) var(--pulse-color);
+    }
+  }
+}
+
+/* Theme toggle: let the JS clip-path animation do the reveal. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 html {
