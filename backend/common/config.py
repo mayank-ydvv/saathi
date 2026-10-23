@@ -96,6 +96,7 @@ class Settings:
     parent_device_token: str = ""
     # Who may read a home (lower-cased emails), written onto the home record by seeding.
     family_emails: list[str] = field(default_factory=list)
+    parent_phone: str = ""
 
     @property
     def waits(self) -> dict[str, int]:
@@ -154,6 +155,7 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
         cognito_client_id=env.get("COGNITO_CLIENT_ID", ""),
         parent_device_token=env.get("PARENT_DEVICE_TOKEN", ""),
         family_emails=[e.lower() for e in _list(env.get("FAMILY_EMAILS"), [])],
+        parent_phone=env.get("PARENT_PHONE", "").strip(),
     )
 
 

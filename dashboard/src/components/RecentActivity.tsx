@@ -1,7 +1,8 @@
+import { BellRing, Car, Footprints, Package } from "lucide-react";
 import type { TimelineEvent } from "../api/types";
 import { zoneLabel } from "../lib/labels";
 import { formatTimeIST } from "../lib/time";
-import { Icon } from "./Icon";
+import { zoneColour, zoneTint } from "../lib/zones";
 import { AnimatedList } from "./ui/motion";
 
 function describe(e: TimelineEvent): string {
@@ -9,6 +10,13 @@ function describe(e: TimelineEvent): string {
   if (e.type === "package") return "Parcel at the door";
   if (e.type === "vehicle") return "Vehicle outside";
   return "Movement";
+}
+
+function iconFor(type: string) {
+  if (type === "ding") return BellRing;
+  if (type === "package") return Package;
+  if (type === "vehicle") return Car;
+  return Footprints;
 }
 
 /**
@@ -19,21 +27,27 @@ export function RecentActivity({ events }: { events: TimelineEvent[] }) {
   const latest = events.slice(-6);
   if (!latest.length) return <p className="text-muted">No activity yet today.</p>;
   return (
-    <AnimatedList delay={450} className="items-stretch gap-2">
-      {latest.map((e) => (
-        <div key={e.event_id} className="flex items-center gap-3 rounded-[6px] border border-line bg-canvas px-3 py-2.5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
-            <Icon name={e.type === "ding" || e.type === "package" ? "bell" : "today"} className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] text-ink">{zoneLabel(e.zone)}</p>
-            <p className="truncate text-sm text-muted">{describe(e)}</p>
+    <AnimatedList delay={450} className="items-stretch gap-1">
+      {latest.map((e) => {
+        const IconCmp = iconFor(e.type);
+        return (
+          <div key={e.event_id} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2">
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-xl"
+              style={{ background: zoneTint(e.zone, 18), color: zoneColour(e.zone) }}
+            >
+              <IconCmp className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[15px] font-semibold text-ink">{zoneLabel(e.zone)}</p>
+              <p className="truncate text-sm text-muted">{describe(e)}</p>
+            </div>
+            <time dateTime={e.ts} className="text-sm font-semibold tabular-nums">
+              {formatTimeIST(e.ts)}
+            </time>
           </div>
-          <time dateTime={e.ts} className="text-sm tabular-nums text-muted">
-            {formatTimeIST(e.ts)}
-          </time>
-        </div>
-      ))}
+        );
+      })}
     </AnimatedList>
   );
 }

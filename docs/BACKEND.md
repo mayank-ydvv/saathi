@@ -39,6 +39,7 @@ How the backend is put together, and the optional settings that are not in `.env
 `RING_WEBHOOK_HMAC_KEY` has no default: the API and the Lambdas refuse to start without it.
 `DEMO_MODE` defaults to `false`. With `true` *and* `STORAGE=memory` it mounts `/_dev/*` and
 applies `DEMO_CLOCK_START`; with `STORAGE=dynamo` (AWS) it only shortens the ladder waits.
+| `PARENT_PHONE` | empty | The parent's phone number, stored on the home when seeding; the dashboard shows a "Call" button only when it is set |
 
 ## Design notes
 

@@ -63,6 +63,8 @@ def get_home(home_id: str, request: Request) -> dict[str, Any]:
         "parent_name": home.get("parent_name", ""),
         "city": home.get("city", ""),
         "zones": views.home_zones(home),
+        "contacts": views.home_contacts(home),
+        "parent_phone": home.get("parent_phone") or None,
     }
 
 

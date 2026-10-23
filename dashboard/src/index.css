@@ -1,37 +1,48 @@
 @import "tailwindcss";
 
 /*
- * The landing page's "family almanac" palette (landing/src/index.css): parchment and linen
- * surfaces, graphite text, deep ink for the one primary action, and earthy status colours
- * (sage, ochre, terracotta) instead of bright green/amber/red. Flat: depth comes from surface
- * colour and a hairline border, never shadows. Every text pair is at least 5.9:1 (WCAG AA).
+ * "Refined warm": the landing page's family-almanac palette (parchment, linen, graphite, deep
+ * ink, sage / ochre / terracotta) with real depth and hierarchy. The canvas sits a shade darker
+ * than the cards, cards get a soft warm shadow, and the status colours have a solid form for the
+ * Today card. Every text pair is at least 4.5:1 (WCAG AA).
  */
 :root {
-  --canvas: #f5f5ee; /* Parchment */
-  --surface: #fbfbf6;
-  --surface-2: #e4e7da; /* Linen */
-  --ink: #2f3136; /* Graphite */
-  --muted: #535557; /* Slate */
-  --line: #d7d7cb; /* Pressed Cotton */
+  --canvas: #efede3;
+  --surface: #fffdf8;
+  --surface-2: #f3f0e5; /* Linen */
+  --ink: #2a2c31; /* Graphite */
+  --muted: #5b5d60; /* Slate */
+  --line: #e1ddcd;
   --accent: #192830; /* Deep Ink */
   --accent-ink: #ffffff;
-  --ok-bg: #e4e7da;
+  --gold: #a8701a; /* Ochre, for small highlights */
+  --ok-bg: #e3ead9;
   --ok-ink: #2c4a2e;
   --ok-dot: #5f7d4e;
-  --warn-bg: #f1e6cb;
+  --ok-solid: #4a7340;
+  --warn-bg: #f4e7c8;
   --warn-ink: #6a4710;
   --warn-dot: #b07f2a;
-  --bad-bg: #f1dcd2;
+  --warn-solid: #e2a640;
+  --warn-solid-ink: #2b1d05;
+  --bad-bg: #f3ddd3;
   --bad-ink: #7d2b1d;
   --bad-dot: #b3533c;
-  --shadow: none;
+  --bad-solid: #a83b28;
+  /* One colour per room (timeline, room charts, heatmap). */
+  --zone-front_door: #c08328;
+  --zone-kitchen: #bf5a40;
+  --zone-living_room: #5f8a52;
+  --zone-bedroom: #56698f;
+  --shadow: 0 1px 2px rgb(60 48 24 / 0.06), 0 6px 20px -6px rgb(60 48 24 / 0.14);
+  --shadow-lg: 0 2px 4px rgb(60 48 24 / 0.06), 0 18px 40px -12px rgb(60 48 24 / 0.22);
 }
 
 /* Dark follows the system unless the theme toggle put `light` or `dark` on <html> (lib/theme). */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     color-scheme: dark;
-    --canvas: #141f25;
+    --canvas: #10191e;
     --surface: #192830;
     --surface-2: #22343d;
     --ink: #f5f5ee;
@@ -39,22 +50,32 @@
     --line: #2c3e47;
     --accent: #f5f5ee;
     --accent-ink: #192830;
+    --gold: #e0b062;
     --ok-bg: #1f2e22;
     --ok-ink: #cfe0c2;
     --ok-dot: #8fae78;
+    --ok-solid: #3f6136;
     --warn-bg: #33290f;
     --warn-ink: #ecd7a2;
     --warn-dot: #d1a24b;
+    --warn-solid: #d9a145;
+    --warn-solid-ink: #2b1d05;
     --bad-bg: #3a1f19;
     --bad-ink: #f1c2b4;
     --bad-dot: #d9775f;
-    --shadow: none;
+    --bad-solid: #9a3a28;
+    --zone-front_door: #dba253;
+    --zone-kitchen: #db7b62;
+    --zone-living_room: #8fb57f;
+    --zone-bedroom: #8ea0c6;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 20px 44px -12px rgb(0 0 0 / 0.6);
   }
 }
 
 :root.dark {
   color-scheme: dark;
-  --canvas: #141f25;
+  --canvas: #10191e;
   --surface: #192830;
   --surface-2: #22343d;
   --ink: #f5f5ee;
@@ -62,16 +83,26 @@
   --line: #2c3e47;
   --accent: #f5f5ee;
   --accent-ink: #192830;
+  --gold: #e0b062;
   --ok-bg: #1f2e22;
   --ok-ink: #cfe0c2;
   --ok-dot: #8fae78;
+  --ok-solid: #3f6136;
   --warn-bg: #33290f;
   --warn-ink: #ecd7a2;
   --warn-dot: #d1a24b;
+  --warn-solid: #d9a145;
+  --warn-solid-ink: #2b1d05;
   --bad-bg: #3a1f19;
   --bad-ink: #f1c2b4;
   --bad-dot: #d9775f;
-  --shadow: none;
+  --bad-solid: #9a3a28;
+  --zone-front_door: #dba253;
+  --zone-kitchen: #db7b62;
+  --zone-living_room: #8fb57f;
+  --zone-bedroom: #8ea0c6;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 20px 44px -12px rgb(0 0 0 / 0.6);
 }
 
 @theme inline {
@@ -83,41 +114,37 @@
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-gold: var(--gold);
   --color-ok-bg: var(--ok-bg);
   --color-ok-ink: var(--ok-ink);
   --color-ok-dot: var(--ok-dot);
+  --color-ok-solid: var(--ok-solid);
   --color-warn-bg: var(--warn-bg);
   --color-warn-ink: var(--warn-ink);
   --color-warn-dot: var(--warn-dot);
+  --color-warn-solid: var(--warn-solid);
+  --color-warn-solid-ink: var(--warn-solid-ink);
   --color-bad-bg: var(--bad-bg);
   --color-bad-ink: var(--bad-ink);
   --color-bad-dot: var(--bad-dot);
+  --color-bad-solid: var(--bad-solid);
   --shadow-card: var(--shadow);
+  --shadow-lift: var(--shadow-lg);
   --font-sans: "ABC Arizona Sans", "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  /* Headings: a warm serif that has real weights. The wordmark keeps the landing page's face. */
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-flare: "ABC Arizona Flare", "Belleza", ui-serif, Georgia, serif;
 }
 
-/* Same shape language as the landing page: one font weight, corners of at most 6 px, no shadows. */
-@theme {
-  --font-weight-medium: 400;
-  --font-weight-semibold: 400;
-  --font-weight-bold: 400;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-2xl: 6px;
-  --radius-3xl: 6px;
-  --shadow-sm: none;
-  --shadow-2xl: none;
-}
-
 /*
- * Magic UI keyframes (orbiting circles, ripple, pulsating button). `inline` so the per-element
- * --duration/--i/--angle are read where the class is used, not once on :root.
+ * Magic UI keyframes (orbiting circles, ripple, pulsating button), plus a toast slide-in.
+ * `inline` so the per-element --duration/--i/--angle are read where the class is used.
  */
 @theme inline {
   --animate-orbit: orbit calc(var(--duration) * 1s) linear infinite;
   --animate-ripple: ripple var(--duration, 2.4s) ease calc(var(--i, 0) * 0.2s) infinite;
   --animate-pulse-ring: pulse-ring var(--duration) ease-out infinite;
+  --animate-toast-in: toast-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 
   @keyframes orbit {
     0% {
@@ -147,6 +174,16 @@
       box-shadow: 0 0 0 var(--distance) var(--pulse-color);
     }
   }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 /* Theme toggle: let the JS clip-path animation do the reveal. */
@@ -167,7 +204,6 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
-  letter-spacing: -0.02em;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -175,25 +211,56 @@ body {
   font-synthesis: none;
 }
 
-/* Headings and the wordmark in the display face, tightly tracked like the landing page. */
 h1,
 h2,
+h3,
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
 .flare {
   font-family: var(--font-flare);
   font-weight: 400;
   letter-spacing: -0.035em;
 }
 
-/* Cards are flat: a hairline border instead of the old drop shadow. */
+/* Cards: a hairline border and a soft warm shadow. */
 .shadow-card {
-  box-shadow: none;
+  box-shadow: var(--shadow);
   border: 1px solid var(--line);
+}
+
+/* Small feedback: cards rise a little under the pointer, buttons give under a press. */
+.lift {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.press {
+  transition:
+    transform 0.12s ease,
+    filter 0.15s ease;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
 }
 
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {
