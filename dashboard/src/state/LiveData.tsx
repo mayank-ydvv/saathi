@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- provider + its hook belong together */
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { getAlerts, getHome, getStatus } from "../api/client";
-import type { Alert, Home, Status } from "../api/types";
+import type { Alert, Home, Status, StatusColour } from "../api/types";
 import { POLL_STATUS_MS } from "../config";
+import { useNotifications } from "../hooks/useNotifications";
 import { type Polled, usePolling } from "../hooks/usePolling";
 import { startServerClockSync } from "../lib/clock";
 
@@ -36,6 +37,24 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
     }),
     [home, status, alerts, refreshStatus, refreshAlerts],
   );
+
+  // A browser notification when the day escalates to red, even with the tab in the background.
+  const { notify } = useNotifications();
+  const prevColour = useRef<StatusColour | null>(null);
+  useEffect(() => {
+    const colour = status.data?.status ?? null;
+    const was = prevColour.current;
+    prevColour.current = colour;
+    if (colour !== "red" || (was !== "green" && was !== "yellow")) return;
+    const parent = home.data?.parent_name;
+    const reason =
+      status.data?.reason ?? activeAlert(status.data, alerts.data?.alerts)?.reason ?? null;
+    void notify(parent ? `${parent} needs attention` : "Saathi needs attention", {
+      body: reason ?? "Someone should check in.",
+      tag: status.data?.active_alert_id ?? "saathi",
+    });
+  }, [status.data, alerts.data, home.data, notify]);
+
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }
 
