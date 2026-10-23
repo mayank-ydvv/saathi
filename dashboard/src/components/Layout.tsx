@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { config } from "../config";
 import { useNow } from "../hooks/useNow";
@@ -5,6 +6,8 @@ import { formatDateIST, formatTimeIST } from "../lib/time";
 import { useLive } from "../state/LiveData";
 import { FamilyName } from "./FamilyName";
 import { Icon, type IconName } from "./Icon";
+import { PullToRefresh } from "./PullToRefresh";
+import { Toast } from "./Toast";
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: "/", label: "Today", icon: "today" },
@@ -33,9 +36,17 @@ function Tab({ to, label, icon, compact }: (typeof TABS)[number] & { compact?: b
 }
 
 export function Layout() {
-  const { home, status } = useLive();
+  const { home, status, refreshLive } = useLive();
   const now = useNow(1_000);
   const parent = home.data;
+
+  // Pulling the page down on a touch device refetches status + alerts, with a confirmation.
+  const [toast, setToast] = useState(false);
+  const refreshWithToast = useCallback(() => {
+    refreshLive();
+    setToast(true);
+  }, [refreshLive]);
+  const hideToast = useCallback(() => setToast(false), []);
 
   return (
     <div className="min-h-dvh md:flex">
@@ -92,9 +103,13 @@ export function Layout() {
           tabIndex={-1}
           className="mx-auto w-full max-w-5xl flex-1 px-4 pt-5 pb-28 outline-none md:px-8 md:pb-10"
         >
-          <Outlet />
+          <PullToRefresh onRefresh={refreshWithToast}>
+            <Outlet />
+          </PullToRefresh>
         </main>
       </div>
+
+      <Toast message="Updated just now" visible={toast} onDone={hideToast} />
 
       <nav
         aria-label="Main"
