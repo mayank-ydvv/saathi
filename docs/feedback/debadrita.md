@@ -49,6 +49,21 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 - **Needs work:** `mix-blend-mode: multiply` does nothing inside a layer that has its own opacity or transform (it only blends within that group), so a white-backdrop photo showed as a white box; we cut the backdrop out into a transparent WebP instead.
 - **Build with it again?** Yes.
 
+### Amazon Cognito (family login)
+- **Used for:** email + password sign-up for the family dashboard, with the 6-digit verification and password-reset codes emailed by Cognito.
+- **Worked well:** the public user-pool operations (`SignUp`, `ConfirmSignUp`, `InitiateAuth`, `ForgotPassword`, …) are plain JSON POSTs with an `X-Amz-Target` header and only need the app client id, so the browser calls them with `fetch` and no SDK. The default Cognito sender means no SES setup for a hackathon.
+- **Needs work:** errors come back as `__type` strings, sometimes namespaced (`…#UsernameExistsException`), so you have to normalise them yourself. With `PreventUserExistenceErrors`, `ForgotPassword` succeeds for unknown emails, which is right for security but needs careful wording on the screen.
+- **Build with it again?** Yes.
+
+### shadcn/ui charts, Magic UI and Aceternity components
+- **Used for:** the dashboard's stat cards, radial and area charts, animated list, pulsating button, ripple, theme toggle and login screen, and the landing page's text animations, iPhone and Safari mockups, animated beam and timeline.
+- **Worked well:** copy-in components from each registry's JSON (`/r/<name>.json`) mean no runtime dependency on the libraries themselves, just `motion`, `recharts`, `clsx` and `tailwind-merge`.
+- **Needs work:**
+  - Magic UI's keyframes use per-element variables (`--duration`, `--angle`). In Tailwind 4 they must go in `@theme inline`; in plain `@theme` the animation resolves once on `:root` and silently becomes `none`.
+  - Its "pulse" keyframe overrides Tailwind's `animate-pulse` skeletons, so we renamed it.
+  - In Recharts 3, a full 360° radial bar draws nothing, and the shadcn radial example's `PolarGrid` painted over the bar.
+- **Build with it again?** Yes, picking components that fit a calm, flat design.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |

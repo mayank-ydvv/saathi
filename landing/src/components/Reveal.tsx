@@ -1,34 +1,34 @@
 import type { ReactNode } from "react";
-import { useInView } from "../lib/motion";
+import { BlurFade } from "./ui/BlurFade";
+import { TextAnimate } from "./ui/TextAnimate";
 
 type Props = { children: ReactNode; delay?: number; className?: string; y?: number };
 
-/** Fades and lifts its children in the first time they scroll into view. */
-export function Reveal({ children, delay = 0, className = "", y = 28 }: Props) {
-  const [ref, seen] = useInView<HTMLDivElement>(0.2);
+/**
+ * Fades, lifts and un-blurs its children the first time they scroll into view
+ * (Magic UI "Blur Fade"). `delay` is in ms, as before.
+ */
+export function Reveal({ children, delay = 0, className = "", y = 24 }: Props) {
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: seen ? 1 : 0,
-        transform: seen ? "none" : `translateY(${y}px)`,
-        transition: `opacity 900ms ease ${delay}ms, transform 1100ms cubic-bezier(.2,.7,.2,1) ${delay}ms`,
-      }}
-    >
+    <BlurFade inView inViewMargin="-80px" direction="up" offset={y} delay={delay / 1000} duration={0.7} className={className}>
       {children}
-    </div>
+    </BlurFade>
   );
 }
 
-/** Centred section heading block (DESIGN.md "Section Heading Block"). */
+/**
+ * Centred section heading block (DESIGN.md "Section Heading Block"); the title words rise out
+ * of a blur one by one (Magic UI "Text Animate", blurInUp by word).
+ */
 export function SectionHeading({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Reveal className="mx-auto max-w-[640px] px-4 text-center">
-      <h2 className="flare text-[34px] sm:text-heading">{title}</h2>
-      <p className="mx-auto mt-4 max-w-[560px] text-body text-slate sm:text-[17px] sm:leading-[1.3]">
-        {children}
-      </p>
-    </Reveal>
+    <div className="mx-auto max-w-[640px] px-4 text-center">
+      <TextAnimate as="h2" by="word" animation="blurInUp" once className="flare text-[34px] sm:text-heading">
+        {title}
+      </TextAnimate>
+      <Reveal delay={150}>
+        <p className="mx-auto mt-4 max-w-[560px] text-body text-slate sm:text-[17px] sm:leading-[1.3]">{children}</p>
+      </Reveal>
+    </div>
   );
 }

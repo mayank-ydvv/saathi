@@ -28,8 +28,32 @@ defaults to the local dashboard on port 5173.
 | Around-the-clock guardian | Three phones rise at different speeds: late start, long inactivity, night activity |
 | Effortless care | Voice nudge (live waveform + typing), doorbell vision (scanner corners), Connect ticker |
 | One tap to say "I'm okay" | The parent-app nudge typed out inside a phone, then the button is tapped |
+| How it works | Animated beams: Ring doorbell, cameras and motion → Saathi → Ma, the family, the neighbour |
+| Help climbs one step at a time | Scroll timeline of the escalation ladder (17:05 → 17:25 on the fall day) |
 | Involve family & neighbours | The Telegram alert card with a typed reply, and the neighbour card |
+| Everything about today | The real dashboard in a Safari window, plus four number tickers |
 | Closing + footer | Call to action and the dark olive footer strip |
+
+### Components from the shadcn / Magic UI / Aceternity links
+
+Copied from each library's registry into `src/components/ui/` (only the import path changed,
+plus the small edits listed), then restyled with the parchment tokens:
+
+| Component | Used for | Edits |
+|---|---|---|
+| Magic UI Text Animate | Every section title rises word by word out of a blur | none |
+| Magic UI Word Rotate | Hero: "let Saathi keep watch / check in / call for help" | renders inline spans (it can sit in the h1) |
+| Magic UI Blur Fade | All reveals (`Reveal`) | none |
+| Magic UI iPhone | The three guardian phones | `children` overlay on the screen; frame colour from `--iphone-frame` |
+| Magic UI Marquee | The Connect list (vertical, pauses on hover) | none |
+| Magic UI Animated Beam | How it works | colours passed as props |
+| Magic UI Dot Pattern | Behind the beams | one SVG `<pattern>` instead of one element per dot |
+| Magic UI Safari | Dashboard preview | parchment chrome colours |
+| Magic UI Number Ticker | Dashboard facts | none |
+| Aceternity Timeline | The escalation ladder | parchment colours; title/sub props instead of the demo header |
+
+`public/screens/dashboard-*.jpg` are screenshots of the dashboard on demo data (headless Chrome).
+The dashboard's own login screen and charts are described in `dashboard/README.md`.
 
 The opening sequence (`src/sections/Story.tsx`) is one 760 vh section with a pinned stage; every
 frame maps scroll progress to transforms and writes them straight to the DOM, so React never

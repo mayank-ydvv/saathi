@@ -1,4 +1,5 @@
 import { Reveal, SectionHeading } from "../components/Reveal";
+import { Marquee } from "../components/ui/Marquee";
 import { useInView, useTyping } from "../lib/motion";
 import { courier, img, ma } from "../photos";
 
@@ -94,16 +95,15 @@ export function Effortless() {
 
         <Reveal delay={240}>
           <div className="relative aspect-[4/5] overflow-hidden rounded-[6px] bg-linen">
-            <div className="absolute inset-0 [mask-image:linear-gradient(transparent,black_30%,black_70%,transparent)]">
-              <ul className="flex flex-col items-center gap-7 pt-6" style={{ animation: "ticker 16s linear infinite" }}>
-                {[...CONNECT, ...CONNECT].map((c, i) => (
-                  <li key={i} className="flex items-center gap-3 text-[17px] text-dusk">
-                    <span className="h-3 w-3 rounded-[3px] border border-dusk/60" aria-hidden />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Magic UI vertical marquee, paused on hover. */}
+            <Marquee vertical pauseOnHover repeat={3} className="absolute inset-0 items-center [--duration:18s] [--gap:1.75rem] [mask-image:linear-gradient(transparent,black_30%,black_70%,transparent)]">
+              {CONNECT.map((c) => (
+                <span key={c} className="flex items-center gap-3 text-[17px] text-dusk">
+                  <span className="h-3 w-3 rounded-[3px] border border-dusk/60" aria-hidden />
+                  {c}
+                </span>
+              ))}
+            </Marquee>
           </div>
           <Caption label="Connect" text="Ring in, Telegram and voice out." />
         </Reveal>

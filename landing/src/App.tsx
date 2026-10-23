@@ -4,9 +4,12 @@ import { PhotoPicker } from "./components/PhotoPicker";
 import { DASHBOARD_URL } from "./config";
 import { reducedMotion } from "./lib/motion";
 import { Closing } from "./sections/Closing";
+import { DashboardPreview } from "./sections/DashboardPreview";
 import { Effortless } from "./sections/Effortless";
 import { Family } from "./sections/Family";
 import { Guardian } from "./sections/Guardian";
+import { HowItWorks } from "./sections/HowItWorks";
+import { Ladder } from "./sections/Ladder";
 import { Nudge } from "./sections/Nudge";
 import { Story } from "./sections/Story";
 
@@ -62,9 +65,12 @@ export function App() {
       >
         <Guardian />
         <Effortless />
+        <HowItWorks />
         <Nudge />
+        <Ladder />
         <Family />
       </div>
+      <DashboardPreview />
       <Closing />
       {import.meta.env.DEV && <PhotoPicker />}
     </main>
