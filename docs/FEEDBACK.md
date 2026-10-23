@@ -2,9 +2,8 @@
 
 What we thought of every tool, API, SDK and service we built Saathi with, written as we built it.
 This file compiles the per-member notes in [`docs/feedback/`](feedback/) (Mayank: backend and AWS;
-Krishnaditya: engine and Bedrock; Debadrita: scenarios, parent app, docs; Anushka's dashboard
-notes are not written yet). Where nobody has written notes yet, the section says so instead of
-guessing.
+Krishnaditya: engine and Bedrock; Debadrita: scenarios, parent app, docs; Anushka: family
+dashboard). Where nobody has written notes yet, the section says so instead of guessing.
 
 Compiled on 2026-10-22. **Status:** the whole system runs locally (`STORAGE=memory`). The AWS
 stack builds and validates (`sam build`, `sam validate --lint`) but has **not been deployed yet**,
@@ -95,11 +94,23 @@ come.
 - **Needs work:** on Windows, `zoneinfo` silently depends on the `tzdata` package, and nothing in the error points you there. (This bit two of us.)
 - **Build with it again?** Yes: the engine core has no dependencies.
 
-### Vite, React 18, Tailwind CSS 4, Vitest: Debadrita
-- **Used for:** the parent app (`parent-app/`).
+### Vite, React 18, Tailwind CSS 4, Vitest: Debadrita, Anushka
+- **Used for:** the parent app (`parent-app/`) and the family dashboard (`dashboard/`).
 - **Worked well:** Tailwind 4's Vite plugin needs no PostCSS or config file, and `@theme` CSS variables made a small, high-contrast palette easy to keep consistent. `vitest` with jsdom and fake timers tested 3 s polling and the 5 s thank-you screen without waiting.
 - **Needs work:** `@testing-library/user-event` v14 hangs under Vitest fake timers even with `delay: null`; we switched to `fireEvent`. Vite 7 requires Node 20.19 or newer; we stayed on Vite 6, which supports every Node 20 release the contract allows.
+- **Also (dashboard):** design tokens as CSS variables mapped with `@theme inline` give dark mode in one `prefers-color-scheme` block; the difference between `@theme` and `@theme inline` (needed when a token points at a variable that changes per scheme) is easy to miss in the docs.
 - **Onboarding:** about 15 minutes to a running app.
+- **Build with it again?** Yes.
+
+### React Router 6.30 and Testing Library + jsdom: Anushka
+- **Used for:** the dashboard's four tabs, and screen tests that click "I'm checking" on mock data.
+- **Worked well:** role/name queries (`getByRole("region", { name: "Open alert" })`) double as an accessibility check; `MemoryRouter` makes screen tests easy.
+- **Needs work:** every test run printed two React Router "v7 future flag" warnings until both `BrowserRouter` and `MemoryRouter` got `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}`; the warning doesn't say test routers need it too. jsdom has no `HTMLDialogElement.showModal()`, so the visitor panel needs a fallback in tests.
+- **Build with it again?** Yes.
+
+### npm 11: Anushka
+- **Used for:** installing the frontends.
+- **Needs work:** `npm install` prints `npm warn allow-scripts esbuild (postinstall …)` and skips esbuild's install script. Vite still works (the binary comes from esbuild's platform package), but the warning doesn't say whether anything is broken, and CI's npm 10 behaves differently.
 - **Build with it again?** Yes.
 
 ### Excalidraw: Debadrita
@@ -134,6 +145,10 @@ come.
 | Debadrita | Run the backend on Windows | `ZoneInfoNotFoundError`; `DEMO_CLOCK_START=00:00` crashed at startup | Installed `tzdata`; passed a full ISO timestamp |
 | Debadrita | Contribute scenarios upstream in a sub-folder | The example loader doesn't look in sub-folders | Put the files flat in `examples/` |
 | Debadrita | Test the parent app with user-event and fake timers | Every click test timed out | Used `fireEvent` |
+| Anushka | Film the mock dashboard at any hour | Mock data on the real clock: after midnight the day was empty ("No kitchen movement by 00:04") | Mock mode runs on a story clock (today 16:30 IST, or `?time=HH:MM`) |
+| Anushka | Real-API demo while the backend runs a demo clock | Browser time 00:28 vs backend 17:05: "Last seen: just now" for 13:00 events | Follow `GET /_dev/clock` in real mode |
+| Anushka | Hour labels on a 375 px phone | "00:0006:00" overlapped | Short labels below the `sm` breakpoint |
+| Mayank | Weekly trend in the 21:00 digest on AWS | The digest Lambda had no read access to the routine table (would fail with AccessDenied; invisible locally) | Granted `BatchGetItem` on that table only; a trend failure no longer blocks the digest |
 | Debadrita | Run the quick start on a fresh clone on Windows | `pip install` failed with `OSError` on a deep botocore data file (260-character path limit) | Cloned to a short path; enabling long paths also fixes it |
 
 ## Feature requests
@@ -150,3 +165,5 @@ come.
 | Amazon Polly | Mention `LanguageCode` for bilingual voices in the `synthesize_speech` examples | Easy to get the wrong pronunciation | nice-to-have |
 | Amazon Bedrock | A strict-JSON output option in Converse without tool-use boilerplate | Structured outputs like visitor descriptions need validation code today | important |
 | Python on Windows | Make `zoneinfo` errors point to the `tzdata` package | Cost two of us time | nice-to-have |
+| React Router | Say in the v7 future-flag warning that test routers (`MemoryRouter`) need the flags too | Every test run was noisy | nice-to-have |
+| npm | Say clearly whether skipping an install script (`allow-scripts`) breaks the package | The warning looks like an error to newcomers | nice-to-have |
