@@ -64,3 +64,5 @@ class EngineConfig:
     night_rare_ratio: float = 0.05
     min_days_for_checks: int = 5  # below this, use cold-start defaults
     default_first_activity: str = "08:00"
+    night_repeat_minutes: int = 30  # a later rare night event in the zone alerts again
+    night_max_per_night: int = 3

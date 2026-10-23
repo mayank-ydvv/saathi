@@ -37,7 +37,7 @@ on Ring") and each member's build prompt. Tick items off here as they land.
 | AWS deploy + `/health` on the deployed API | Acceptance criterion; AWS Builder entry | AWS credentials, then `sam deploy --guided` (stays in the free tier except a few cents of Bedrock) | Mayank |
 | One real Ring Partner API call | Report: "show at least one real Ring Partner API call if we get a playground token" | A Ring Playground token (optional; the emulator covers the rest) | Mayank |
 | Doorbell test photos | `scam_visitor` / `aide_visit` shots; the emulator's snapshot is a tiny placeholder | Two images (a stranger with no uniform or package, a uniformed aide): own photos with consent or AI-generated, no copyrighted images; serve with `ring-sandbox serve --media-dir` | Debadrita |
-| Night alerts: once a day per zone, or again after 30 minutes? | A second door opening at 03:00 after a resolved 02:10 alert currently doesn't alert | A product decision; the change is one line in `backend/engine/anomaly.py` | Team |
+| ~~Night alerts: once a day per zone, or again after 30 minutes?~~ **Done:** again after 30 min, max 3 a night (`EngineConfig`) | A second door opening at 03:00 after a resolved 02:10 alert currently doesn't alert | A product decision; the change is one line in `backend/engine/anomaly.py` | Team |
 | Protect `main` (require PR + passing CI) | Report's GitHub workflow | GitHub → Settings → Branches | Mayank |
 | Demo video (< 3 min, public, English) | Required for submission | Record and edit following `docs/DEMO_SCRIPT.md`; upload to YouTube | Debadrita |
 | Devpost submission | Required | Paste `docs/DEVPOST.md`, video link, repo link, Open Source fields from `docs/OPEN_SOURCE.md`; choose Ring track + AWS Builder + Open Source | Team |

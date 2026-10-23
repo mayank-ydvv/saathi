@@ -144,6 +144,29 @@ def test_rare_front_door_at_2am_alerts_once():
     assert check_event(r, ev("front_door", "02:12"), CFG) is None  # same night: no spam
 
 
+def test_night_alert_repeats_after_30_min_at_most_3_per_night():
+    r = learned("front_door", first="06:30")
+    fired = [
+        t
+        for t in ("23:30", "23:40", "00:10", "02:10", "02:30", "03:00", "04:00")
+        if check_event(r, ev("front_door", t, TODAY if t >= "12" else TODAY + timedelta(1)), CFG)
+    ]
+    # 23:40 is 10 min after the first; 02:30 is 20 min after 02:10; 03:00 would be the 4th
+    assert fired == ["23:30", "00:10", "02:10"]
+    next_night = ev("front_door", "02:10", TODAY + timedelta(days=2))
+    assert check_event(r, next_night, CFG) is not None  # a new night starts over
+
+
+def test_night_repeat_is_configurable_and_survives_round_trip():
+    cfg = EngineConfig(night_repeat_minutes=60, night_max_per_night=2)
+    r = learned("front_door", first="06:30")
+    assert check_event(r, ev("front_door", "01:00"), cfg) is not None
+    r = routine_from_dict(routine_to_dict(r))
+    assert check_event(r, ev("front_door", "01:40"), cfg) is None  # < 60 min
+    assert check_event(r, ev("front_door", "02:05"), cfg) is not None
+    assert check_event(r, ev("front_door", "04:00"), cfg) is None  # max 2
+
+
 def test_frequent_night_slot_no_alert():
     r = learned("kitchen", extra=("23:00",))  # a nightly 23:00 snack
     assert check_event(r, ev("kitchen", "23:05"), CFG) is None

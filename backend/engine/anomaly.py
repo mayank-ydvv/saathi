@@ -1,9 +1,9 @@
 """Anomaly detection: late start, long inactivity, night activity (contract 4.3).
 
-Pure functions, no I/O. Each kind fires at most once per local day (per zone for
-late_start / night_activity, per home for long_inactivity), remembered in `Routine.fired`
-as kind -> local ISO date. The functions write that marker, so callers must persist the
-routine after a check that returned an anomaly.
+Pure functions, no I/O. late_start fires at most once per local day per zone and
+long_inactivity once per day per home; night_activity can repeat (see below). What fired is
+remembered in `Routine.fired` (kind -> local ISO date, plus night count/time). The functions
+write it, so callers must persist the routine after a check that returned an anomaly.
 
 Rules, one sentence each:
 - late_start: no kitchen / bedroom activity today by usual first time + max(3 x MAD, 30 min).
@@ -11,7 +11,8 @@ Rules, one sentence each:
 - long_inactivity: during waking hours, no movement anywhere for 4 h, counting the night's
   sleep only from waking_start (so the morning after a normal night never fires).
 - night_activity: front door / kitchen activity outside waking hours in a slot that was
-  active on < 5% of learned days.
+  active on < 5% of learned days. Again for a later rare event at least 30 min after the
+  zone's previous night alert, at most 3 per night (both in EngineConfig).
 """
 
 from __future__ import annotations
@@ -42,7 +43,7 @@ def check_event(r: Routine, e: Event, cfg: EngineConfig, tz: str = TIMEZONE) -> 
     slot = minute // SLOT_MINUTES
     if r.hist[slot] >= cfg.night_rare_ratio * r.days_seen:
         return None
-    if not _claim(r, "night_activity", t.date()):
+    if not _claim_night(r, e.ts, _night_of(t.date(), minute, cfg), cfg):
         return None
     what = (
         "Front door opened" if e.zone == "front_door" else f"{_label(e.zone).capitalize()} movement"
@@ -151,6 +152,29 @@ def _claim(r: Routine, kind: str, day: date) -> bool:
     if r.fired.get(kind) == day.isoformat():
         return False
     r.fired[kind] = day.isoformat()
+    return True
+
+
+def _night_of(day: date, minute: int, cfg: EngineConfig) -> date:
+    """The evening a night belongs to: 02:10 on the 23rd is the night of the 22nd."""
+    return day if minute >= _minutes(cfg.waking_end) else day - timedelta(days=1)
+
+
+def _claim_night(r: Routine, ts: datetime, night: date, cfg: EngineConfig) -> bool:
+    """Allow up to `night_max_per_night` alerts per night, `night_repeat_minutes` apart. O(1)."""
+    f = r.fired
+    count = 0
+    if f.get("night_activity") == night.isoformat():
+        last = f.get("night_activity_last")  # missing on routines stored before this rule
+        count = int(f.get("night_activity_count", "1"))
+        too_soon = last is None or ts - datetime.fromisoformat(last) < timedelta(
+            minutes=cfg.night_repeat_minutes
+        )
+        if too_soon or count >= cfg.night_max_per_night:
+            return False
+    f["night_activity"] = night.isoformat()
+    f["night_activity_count"] = str(count + 1)
+    f["night_activity_last"] = ts.isoformat()
     return True
 
 

@@ -22,10 +22,11 @@ run on top of it:
 |---|---|---|
 | **late_start** | a zone has no activity today by its usual first time + max(3 × MAD, 30 min) | O(zones) per tick |
 | **long_inactivity** | nothing anywhere for 4 h during waking hours (the night only counts from 06:00) | O(zones) per tick |
-| **night_activity** | activity outside waking hours in a slot used on < 5% of learned days | O(1) per event |
+| **night_activity** | activity outside waking hours in a slot used on < 5% of learned days; again ≥ 30 min after the last one, max 3 a night | O(1) per event |
 
-Learning is O(1) per event and O(D log D) once a day. Each rule fires at most once per day,
-so families get one clear alert, not a stream. Every alert reads like a person wrote it:
+Learning is O(1) per event and O(D log D) once a day. Late start and inactivity fire at most once
+per day and night activity at most three times a night, 30 minutes apart, so families get a few
+clear alerts, not a stream. Every alert reads like a person wrote it:
 *"No kitchen activity by 10:15 (usually 07:52)"*.
 
 The library is standard-library only, typed (`py.typed`), deterministic, has no ML
