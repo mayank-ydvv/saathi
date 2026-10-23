@@ -50,7 +50,7 @@ export function Today() {
         />
       ) : null}
 
-      {timeline.data ? (
+      {timeline.data && home.data ? (
         <BlurFade delay={0.05}>
           <TodayStats events={timeline.data.events} zones={home.data?.zones ?? []} />
         </BlurFade>

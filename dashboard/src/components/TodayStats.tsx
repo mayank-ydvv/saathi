@@ -1,11 +1,16 @@
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 import type { TimelineEvent } from "../api/types";
+import { useSession } from "../auth/session";
+import { config } from "../config";
 import { FAMILY } from "../lib/family";
 import { zoneLabel } from "../lib/labels";
 import { formatTimeIST } from "../lib/time";
 import { ChartContainer, type ChartConfig } from "./ui/chart";
 import { AvatarCircles } from "./ui/effects";
 import { NumberTicker } from "./ui/motion";
+
+/** Engine activity types (backend ENGINE_EVENT_TYPES): package/vehicle aren't the parent. */
+const ACTIVITY_TYPES = new Set(["motion.human", "motion", "ding"]);
 
 const roomsConfig = { rooms: { label: "Rooms", color: "var(--accent)" } } satisfies ChartConfig;
 
@@ -25,16 +30,23 @@ function Stat({ label, children, foot }: { label: string; children: React.ReactN
  * (Magic UI avatar circles). O(events) to summarise.
  */
 export function TodayStats({ events, zones }: { events: TimelineEvent[]; zones: string[] }) {
-  const active = new Set(events.map((e) => e.zone));
+  // Only signs of the parent being about count (packages and vehicles don't), and only rooms
+  // the home has, so the ring can never read "4/1" or go past a full circle (L6).
+  const activity = events.filter((e) => ACTIVITY_TYPES.has(e.type));
+  const active = new Set(activity.map((e) => e.zone).filter((z) => zones.includes(z)));
   const total = Math.max(zones.length, 1);
-  const last = events.at(-1);
-  const watching = FAMILY.filter((p) => ["Rahul", "Priya", "Mrs Iyer"].includes(p.name));
+  const last = activity.at(-1);
+  const session = useSession();
+  // The demo family in mock mode; in real mode, who is signed in (no contacts API yet).
+  const watching = config.useMock
+    ? FAMILY.filter((p) => ["Rahul", "Priya", "Mrs Iyer"].includes(p.name))
+    : [];
   const data = [{ name: "rooms", rooms: active.size, fill: "var(--color-rooms)" }];
 
   return (
     <section aria-label="Today at a glance" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat label="Events today" foot="Motion and doorbell, all rooms">
-        <NumberTicker value={events.length} className="flare text-[40px] leading-none" />
+        <NumberTicker value={activity.length} className="flare text-[40px] leading-none" />
       </Stat>
       <Stat label="Rooms active">
         <ChartContainer
@@ -63,9 +75,15 @@ export function TodayStats({ events, zones }: { events: TimelineEvent[]; zones: 
       <Stat label="Latest activity" foot={last ? `at ${formatTimeIST(last.ts)}` : undefined}>
         <p className="flare text-[26px] leading-tight">{last ? zoneLabel(last.zone) : "Nothing yet"}</p>
       </Stat>
-      <Stat label="Family watching" foot={watching.map((p) => p.name).join(", ")}>
-        <AvatarCircles people={watching} size={40} className="mt-1" />
-      </Stat>
+      {watching.length ? (
+        <Stat label="Family watching" foot={watching.map((p) => p.name).join(", ")}>
+          <AvatarCircles people={watching} size={40} className="mt-1" />
+        </Stat>
+      ) : (
+        <Stat label="Signed in" foot={session?.email}>
+          <p className="flare text-[26px] leading-tight">{session?.name || "Family"}</p>
+        </Stat>
+      )}
     </section>
   );
 }

@@ -62,7 +62,7 @@ export function Login() {
   });
 
   return (
-    <AuthLayout title="Welcome back" sub="Log in to see how Ma's day is going.">
+    <AuthLayout title="Welcome back" sub="Log in to see how your parent's day is going.">
       {state?.notice ? (
         <p role="status" className="mb-4 rounded-[6px] bg-ok-bg px-3 py-2 text-sm text-ok-ink">
           {state.notice}

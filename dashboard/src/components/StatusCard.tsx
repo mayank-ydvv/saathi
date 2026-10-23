@@ -37,7 +37,7 @@ export function StatusCard({ status, now }: { status: Status; now: Date }) {
               {timeAgo(seen.ts, now)}
             </>
           ) : (
-            "No activity recorded yet today"
+            "No activity recorded yet"
           )}
         </span>
       </p>
