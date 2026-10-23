@@ -43,6 +43,12 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 - **Needs work:** the older `@excalidraw/utils` 0.1.2 package ignores `lineHeight` and `roundness`, so two-line labels overlap and straight arrows curve. Easy to mistake for a broken file.
 - **Build with it again?** Yes.
 
+### Lenis (smooth scrolling) and scroll-driven animation
+- **Used for:** the landing page (`landing/`): smooth scrolling, plus a pinned 760 vh opening sequence driven by scroll progress.
+- **Worked well:** Lenis needs one `raf` loop and works with plain `getBoundingClientRect()` progress, so no animation library was needed; writing transforms straight to the DOM keeps React out of the 60 fps path.
+- **Needs work:** `mix-blend-mode: multiply` does nothing inside a layer that has its own opacity or transform (it only blends within that group), so a white-backdrop photo showed as a white box; we cut the backdrop out into a transparent WebP instead.
+- **Build with it again?** Yes.
+
 ## Friction log
 
 | Task attempted | Steps taken | Where it broke | How we fixed it |
@@ -55,6 +61,7 @@ Notes written as we build, not at the end. One section per tool, then the fricti
 | Verify scenarios end to end on Windows | Started the API with `DEMO_CLOCK_START=00:00` | `ValueError: Invalid isoformat string: '00:00'` at startup; later `ZoneInfoNotFoundError` in tests | Passed a full ISO timestamp; installed `tzdata` in the local venv |
 | Contribute scenarios upstream in a sub-folder | Planned `examples/elder_care/*.yml` | `scenarios.examples()` doesn't recurse, so names wouldn't resolve | Put the files flat in `examples/` like the existing ones |
 | Test the parent app with user-event and fake timers | `userEvent.setup({ advanceTimers })`, then `{ delay: null }` | Every click test timed out after 5 s | Used `fireEvent` inside `act` |
+| Blend a hand photo onto the landing page background | `mix-blend-mode: multiply` on an image inside an animated (opacity + transform) layer | The white studio backdrop stayed visible as a box | Pre-cut the backdrop into a transparent WebP |
 | Run the quick start on a fresh clone on Windows | `pip install -e ".[dev]"` in a deep folder | `OSError: No such file or directory` on a botocore data file (Windows 260-character path limit) | Cloned to a short path; enabling long paths also fixes it |
 
 ## Feature requests
